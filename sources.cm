@@ -1,0 +1,14 @@
+group
+        structure SMLParser
+        structure CommentParser
+        structure CommentedAst
+is
+      $/basis.cm
+      $/smlnj-lib.cm
+      $smlnj/viscomp/parser.cm
+      $smlnj/viscomp/basics.cm
+
+      lib.sml
+      parser/commentParser.sml
+      parser/smlParser.sml
+      ast/commentedAst.sml
