@@ -16,12 +16,7 @@ structure CommentParser = struct
       else str
 
   fun combine ((prevChar, openCommentSyms, isOpenQuote, openComment, comments, line), char) =
-      let val extendedComment = addToComment openCommentSyms openComment char
-          val () = print (String.str prevChar ^ " " ^ String.str char
-                          ^ " " ^ (Int.toString openCommentSyms) ^
-                          " " ^ (Bool.toString isOpenQuote) ^ " [openComment] "
-                          ^ " [comments] " ^ Int.toString line ^ "\n")
-      in
+      let val extendedComment = addToComment openCommentSyms openComment char in
         case (prevChar, char) of
             (#"*" , #")") =>
             if isOpenQuote
@@ -50,7 +45,7 @@ structure CommentParser = struct
             if openCommentSyms > 0
             then (char, openCommentSyms, isOpenQuote, extendedComment, comments, line)
             else (char, openCommentSyms, not isOpenQuote, openComment, comments, line)
-          | (#"(", #"*" ) => (* f99 *)
+          | (#"(", #"*" ) =>
             let
               val newCommentSyms = if isOpenQuote then openCommentSyms else openCommentSyms + 1
               val newComment = if isOpenQuote then extendedComment else "(*" ^ extendedComment
