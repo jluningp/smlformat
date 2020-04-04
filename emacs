@@ -1,7 +1,7 @@
-(defcustom yeet-command "/home/jeanne/smlformat/smlformat"
-  "rg command"
+(defcustom smlformat-command "/home/jeanne/smlformat/smlformat"
+  "smlformat command"
   :type 'string
-  :group 'yeet)
+  :group 'smlformat)
 
 (defun buffer-whole-string (buffer)
   (with-current-buffer buffer
@@ -9,20 +9,15 @@
       (widen)
       (buffer-substring-no-properties (point-min) (point-max)))))
 
-;(defun replace-buffer-contents (output)
-;  (let ((old-point (point)))
-;    (erase-buffer)
-;    (insert (buffer-whole-string output))))
-
-(defun my-replace-buffer-contents (outputfile)
-  (replace-buffer-contents (find-file-noselect outputfile))
-  (kill-buffer (get-file-buffer outputfile)))
-
-(defun yeet ()
-  "yeet"
+(defun smlformat ()
+  "smlformat"
   (interactive)
   (let*
       ((ext (file-name-extension buffer-file-name t))
        (outputfile (make-temp-file "smlformat" nil ext)))
-    (call-process yeet-command nil outputfile nil "foo.sml")
-    (my-replace-buffer-contents outputfile)))
+    (call-process smlformat-command nil outputfile nil buffer-file-name)
+    (erase-buffer)
+    (insert (buffer-whole-string outputfile))
+    (kill-buffer outputfile)
+    (delete-file outputfile)
+    ))
