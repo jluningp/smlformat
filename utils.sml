@@ -19,10 +19,9 @@ structure Utils = struct
                 (CommentParser.parse filename)
         val commentedAst =
             AddComments.convertDec {comments=ref comments, sourceMap=(#sourceMap source)} ast
-        val () = print ("**OUTPUT**\n" ^ Format.formatDec {indent=0} commentedAst ^ "**END OUTPUT**\n")
+        val () = print (Format.formatDec {indent=0} commentedAst)
       in
         (comments,
          commentedAst)
       end
-
 end

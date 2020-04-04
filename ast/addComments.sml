@@ -191,8 +191,6 @@ structure AddComments = struct
         | Ast.MarkDec (dec, region) =>
           let
             val line = getLine (#sourceMap conversionInfo) region
-            val () = print (Int.toString line ^ "\n")
-            val () = print (Int.toString (#1 region) ^ " " ^ Int.toString (#2 region) ^ "\n")
             val comments = #comments conversionInfo
             val attachedComments =
                 List.filter

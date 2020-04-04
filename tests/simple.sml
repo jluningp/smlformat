@@ -21,6 +21,9 @@ val _ = let val foo = 10 in foo end
 
 val z = "o7yweiauhfsdo8yuiqt4ar98yuitg9p8yugtuarg98yuguyray9guhuyfgur9ap8grua9f8yuguray9f8ughuayrffguo"
 
+fun foo [] = 0
+  | foo (x::xs) = x
+
 
 
 
