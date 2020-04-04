@@ -1,6 +1,20 @@
 structure AddComments = struct
   open CommentedAst
 
+  type conversionInfo =
+       { sourceMap : SourceMap.sourcemap
+       (* Comments should be sorted in descending order by int *)
+       , comments : (int * string list) list ref
+       }
+
+  fun getLine sourceMap (left, right) =
+      let
+        val regions = SourceMap.fileregion sourceMap (left, right)
+        val lines = List.map (fn (left, _) => #line left) regions
+      in
+        List.foldl Int.max 0 lines
+      end
+
   fun mapFixitem f {fixity, item, region} =
       {fixity=fixity, item=f item, region=region}
 
@@ -8,219 +22,258 @@ structure AddComments = struct
     | mapSigconst f (Ast.Opaque x) = Opaque (f x)
     | mapSigconst f (Ast.Transparent x) = Transparent (f x)
 
-  fun convertExp exp =
+  fun convertExp (conversionInfo : conversionInfo) exp =
       case exp of
-          Ast.AndalsoExp (e1, e2) => AndalsoExp (convertExp e1, convertExp e2)
-        | Ast.AppExp {argument:Ast.exp, function:Ast.exp} => AppExp {argument=convertExp argument
-                                                            , function=convertExp function}
-        | Ast.CaseExp {expr:Ast.exp, rules:Ast.rule list} => CaseExp {expr=convertExp expr,
-                                                          rules=List.map convertRule rules}
+          Ast.AndalsoExp (e1, e2) => AndalsoExp (convertExp conversionInfo e1, convertExp conversionInfo e2)
+        | Ast.AppExp {argument:Ast.exp, function:Ast.exp} => AppExp {argument=convertExp conversionInfo argument
+                                                            , function=convertExp conversionInfo function}
+        | Ast.CaseExp {expr:Ast.exp, rules:Ast.rule list} => CaseExp {expr=convertExp conversionInfo expr,
+                                                          rules=List.map (convertRule conversionInfo) rules}
         | Ast.CharExp str => CharExp str
-        | Ast.ConstraintExp {constraint:Ast.ty, expr:Ast.exp} => ConstraintExp {constraint=convertTy constraint
-                                                                       , expr=convertExp expr}
-        | Ast.FlatAppExp exps => FlatAppExp (List.map (mapFixitem convertExp) exps)
-        | Ast.FnExp rules => FnExp (List.map convertRule rules)
-        | Ast.HandleExp {expr:Ast.exp, rules:Ast.rule list} => HandleExp {expr=convertExp expr
-                                                                 , rules=List.map convertRule rules}
-        | Ast.IfExp {elseCase:Ast.exp, test:Ast.exp, thenCase:Ast.exp} => IfExp {elseCase=convertExp elseCase
-                                                                    , test=convertExp test
-                                                                    , thenCase=convertExp thenCase}
+        | Ast.ConstraintExp {constraint:Ast.ty, expr:Ast.exp} =>
+          ConstraintExp {constraint=convertTy conversionInfo constraint
+                        , expr=convertExp conversionInfo expr}
+        | Ast.FlatAppExp exps => FlatAppExp (List.map (mapFixitem (convertExp conversionInfo)) exps)
+        | Ast.FnExp rules => FnExp (List.map (convertRule conversionInfo) rules)
+        | Ast.HandleExp {expr:Ast.exp, rules:Ast.rule list} =>
+          HandleExp {expr=convertExp conversionInfo expr
+                    , rules=List.map (convertRule conversionInfo) rules}
+        | Ast.IfExp {elseCase:Ast.exp, test:Ast.exp, thenCase:Ast.exp} =>
+          IfExp {elseCase=convertExp conversionInfo elseCase
+                , test=convertExp conversionInfo test
+                , thenCase=convertExp conversionInfo thenCase}
         | Ast.IntExp literal => IntExp literal
-        | Ast.LetExp {dec:Ast.dec, expr:Ast.exp} => LetExp {dec=convertDec dec
-                                                   , expr = convertExp expr}
-        | Ast.ListExp exps => ListExp (List.map convertExp exps)
-        | Ast.MarkExp (exp, region) => MarkExp (convertExp exp, region)
-        | Ast.OrelseExp (e1, e2) => OrelseExp (convertExp e1, convertExp e2)
-        | Ast.RaiseExp e => RaiseExp (convertExp e)
+        | Ast.LetExp {dec:Ast.dec, expr:Ast.exp} => LetExp {dec=convertDec conversionInfo dec
+                                                   , expr = convertExp conversionInfo expr}
+        | Ast.ListExp exps => ListExp (List.map (convertExp conversionInfo) exps)
+        | Ast.OrelseExp (e1, e2) => OrelseExp (convertExp conversionInfo e1, convertExp conversionInfo e2)
+        | Ast.RaiseExp e => RaiseExp (convertExp conversionInfo e)
         | Ast.RealExp s => RealExp s
-        | Ast.RecordExp record => RecordExp (List.map (fn (s, e) => (s, convertExp e)) record)
+        | Ast.RecordExp record => RecordExp (List.map (fn (s, e) => (s, convertExp conversionInfo e)) record)
         | Ast.SelectorExp sym => SelectorExp sym
-        | Ast.SeqExp exps => SeqExp (List.map convertExp exps)
+        | Ast.SeqExp exps => SeqExp (List.map (convertExp conversionInfo) exps)
         | Ast.StringExp str => StringExp str
-        | Ast.TupleExp exps => TupleExp (List.map convertExp exps)
+        | Ast.TupleExp exps => TupleExp (List.map (convertExp conversionInfo) exps)
         | Ast.VarExp path => VarExp path
-        | Ast.VectorExp exps => VectorExp (List.map convertExp exps)
-        | Ast.WhileExp {expr:Ast.exp, test:Ast.exp} => WhileExp {expr=convertExp expr, test=convertExp expr}
+        | Ast.VectorExp exps => VectorExp (List.map (convertExp conversionInfo) exps)
+        | Ast.WhileExp {expr:Ast.exp, test:Ast.exp} =>
+          WhileExp {expr=convertExp conversionInfo expr, test=convertExp conversionInfo expr}
         | Ast.WordExp literal => WordExp literal
+        | Ast.MarkExp (exp, region) => MarkExp (convertExp conversionInfo exp, region)
 
-  and convertRule (Ast.Rule {exp:Ast.exp, pat:Ast.pat}) =
-      Rule {exp=convertExp exp, pat=convertPat pat}
+  and convertRule conversionInfo (Ast.Rule {exp:Ast.exp, pat:Ast.pat}) =
+      Rule {exp=convertExp conversionInfo exp, pat=convertPat conversionInfo pat}
 
-  and convertPat pat =
+  and convertPat conversionInfo pat =
       case pat of
           Ast.AppPat {argument:Ast.pat, constr:Ast.pat} =>
-          AppPat {argument=convertPat argument, constr=convertPat constr}
+          AppPat {argument=convertPat conversionInfo argument, constr=convertPat conversionInfo constr}
         | Ast.CharPat str => CharPat str
         | Ast.ConstraintPat {constraint:Ast.ty, pattern:Ast.pat} =>
-          ConstraintPat {constraint=convertTy constraint
-                        , pattern=convertPat pattern}
-        | Ast.FlatAppPat pats => FlatAppPat (List.map (mapFixitem convertPat) pats)
+          ConstraintPat {constraint=convertTy conversionInfo constraint
+                        , pattern=convertPat conversionInfo pattern}
+        | Ast.FlatAppPat pats => FlatAppPat (List.map (mapFixitem (convertPat conversionInfo)) pats)
         | Ast.IntPat l => IntPat l
         | Ast.LayeredPat {expPat:Ast.pat, varPat:Ast.pat} =>
-          LayeredPat {expPat=convertPat expPat, varPat=convertPat varPat}
-        | Ast.ListPat pats => ListPat (List.map convertPat pats)
-        | Ast.MarkPat (pat, region) => MarkPat (convertPat pat, region)
-        | Ast.OrPat pats => OrPat (List.map convertPat pats)
+          LayeredPat {expPat=convertPat conversionInfo expPat, varPat=convertPat conversionInfo varPat}
+        | Ast.ListPat pats => ListPat (List.map (convertPat conversionInfo) pats)
+        | Ast.MarkPat (pat, region) => MarkPat (convertPat conversionInfo pat, region)
+        | Ast.OrPat pats => OrPat (List.map (convertPat conversionInfo) pats)
         | Ast.RecordPat {def:(symbol * Ast.pat) list, flexibility:bool} =>
-          RecordPat {def = List.map (fn (sym, pat) => (sym, convertPat pat)) def
+          RecordPat {def = List.map (fn (sym, pat) => (sym, convertPat conversionInfo pat)) def
                     , flexibility = flexibility}
         | Ast.StringPat str => StringPat str
-        | Ast.TuplePat pats => TuplePat (List.map convertPat pats)
+        | Ast.TuplePat pats => TuplePat (List.map (convertPat conversionInfo) pats)
         | Ast.VarPat path => VarPat path
-        | Ast.VectorPat pats => VectorPat (List.map convertPat pats)
+        | Ast.VectorPat pats => VectorPat (List.map (convertPat conversionInfo) pats)
         | Ast.WildPat => WildPat
         | Ast.WordPat l => WordPat l
 
-  and convertStrexp strexp =
+  and convertStrexp conversionInfo strexp =
       case strexp of
-          Ast.AppStr (path, strexps) => AppStr (path, List.map (fn (strexp, bool) =>
-                                                                   (convertStrexp strexp, bool)) strexps)
-        | Ast.AppStrI (path, strexps) => AppStrI (path, List.map (fn (strexp, bool) =>
-                                                                     (convertStrexp strexp, bool)) strexps)
-        | Ast.BaseStr dec => BaseStr (convertDec dec)
+          Ast.AppStr (path, strexps) =>
+          AppStr (path, List.map (fn (strexp, bool) =>
+                                     (convertStrexp conversionInfo strexp, bool)) strexps)
+        | Ast.AppStrI (path, strexps) =>
+          AppStrI (path, List.map (fn (strexp, bool) =>
+                                      (convertStrexp conversionInfo strexp, bool)) strexps)
+        | Ast.BaseStr dec => BaseStr (convertDec conversionInfo dec)
         | Ast.ConstrainedStr (strexp, sigConst) =>
-          ConstrainedStr (convertStrexp strexp, mapSigconst convertSigexp sigConst)
-        | Ast.LetStr (dec, strexp) => LetStr (convertDec dec, convertStrexp strexp)
-        | Ast.MarkStr (strexp, region) => MarkStr (convertStrexp strexp, region)
+          ConstrainedStr (convertStrexp conversionInfo strexp, mapSigconst (convertSigexp conversionInfo) sigConst)
+        | Ast.LetStr (dec, strexp) => LetStr (convertDec conversionInfo dec, convertStrexp conversionInfo strexp)
+        | Ast.MarkStr (strexp, region) => MarkStr (convertStrexp conversionInfo strexp, region)
         | Ast.VarStr path => VarStr path
 
-  and convertFctexp fctexp =
+  and convertFctexp conversionInfo fctexp =
       case fctexp of
           Ast.AppFct (path, strexps, sigConst) =>
-          AppFct (path, List.map (fn (strexp, bool) => (convertStrexp strexp, bool)) strexps,
-                  mapSigconst convertFsigexp sigConst)
+          AppFct (path, List.map (fn (strexp, bool) => (convertStrexp conversionInfo strexp, bool)) strexps,
+                  mapSigconst (convertFsigexp conversionInfo) sigConst)
         | Ast.BaseFct {body:Ast.strexp, constraint:Ast.sigexp Ast.sigConst,
                        params:(symbol option * Ast.sigexp) list} =>
-          BaseFct { body = convertStrexp body, constraint = mapSigconst convertSigexp constraint
-                    , params = List.map (fn (sym, sigexp) => (sym, convertSigexp sigexp)) params}
-        | Ast.LetFct (dec, fctexp) => LetFct (convertDec dec, convertFctexp fctexp)
-        | Ast.MarkFct (fctexp, region) => MarkFct (convertFctexp fctexp, region)
-        | Ast.VarFct (path, sigConst) => VarFct (path, mapSigconst convertFsigexp sigConst)
+          BaseFct { body = convertStrexp conversionInfo body
+                  , constraint = mapSigconst (convertSigexp conversionInfo) constraint
+                  , params = List.map (fn (sym, sigexp) => (sym, convertSigexp conversionInfo sigexp)) params}
+        | Ast.LetFct (dec, fctexp) => LetFct (convertDec conversionInfo dec, convertFctexp conversionInfo fctexp)
+        | Ast.MarkFct (fctexp, region) => MarkFct (convertFctexp conversionInfo fctexp, region)
+        | Ast.VarFct (path, sigConst) => VarFct (path, mapSigconst (convertFsigexp conversionInfo) sigConst)
 
-  and convertWherespec (Ast.WhStruct x) = WhStruct x
-    | convertWherespec (Ast.WhType (sym, tyvar, ty)) = WhType (sym, List.map convertTyvar tyvar, convertTy ty)
+  and convertWherespec conversionInfo (Ast.WhStruct x) = WhStruct x
+    | convertWherespec conversionInfo (Ast.WhType (sym, tyvar, ty)) =
+      WhType (sym, List.map (convertTyvar conversionInfo) tyvar, convertTy conversionInfo ty)
 
-  and convertSigexp sigexp =
+  and convertSigexp conversionInfo sigexp =
       case sigexp of
-          Ast.AugSig (sigexp, wherespecs) => AugSig (convertSigexp sigexp, List.map convertWherespec wherespecs)
-        | Ast.BaseSig specs => BaseSig (List.map convertSpec specs)
-        | Ast.MarkSig (sigexp, region) => MarkSig (convertSigexp sigexp, region)
+          Ast.AugSig (sigexp, wherespecs) =>
+          AugSig (convertSigexp conversionInfo sigexp, List.map (convertWherespec conversionInfo) wherespecs)
+        | Ast.BaseSig specs => BaseSig (List.map (convertSpec conversionInfo) specs)
+        | Ast.MarkSig (sigexp, region) => MarkSig (convertSigexp conversionInfo sigexp, region)
         | Ast.VarSig sym => VarSig sym
 
-  and convertFsigexp fsigexp =
+  and convertFsigexp conversionInfo fsigexp =
       case fsigexp of
           Ast.BaseFsig {param:(symbol option * Ast.sigexp) list, result:Ast.sigexp} =>
-          BaseFsig {param=List.map (fn (sym, sigexp) => (sym, convertSigexp sigexp)) param
-                   , result = convertSigexp result}
-        | Ast.MarkFsig (fsigexp, region) => MarkFsig (convertFsigexp fsigexp, region)
+          BaseFsig {param=List.map (fn (sym, sigexp) => (sym, convertSigexp conversionInfo sigexp)) param
+                   , result = convertSigexp conversionInfo result}
+        | Ast.MarkFsig (fsigexp, region) => MarkFsig (convertFsigexp conversionInfo fsigexp, region)
         | Ast.VarFsig sym => VarFsig sym
 
-  and convertSpec spec =
+  and convertSpec conversionInfo spec =
       case spec of
           Ast.DataReplSpec (symbol, path) => DataReplSpec (symbol, path)
         | Ast.DataSpec {datatycs:Ast.db list, withtycs:Ast.tb list} =>
-          DataSpec {datatycs=List.map convertDb datatycs, withtycs=List.map convertTb withtycs}
-        | Ast.ExceSpec tys => ExceSpec (List.map (fn (sym, ty) => (sym, Option.map convertTy ty)) tys)
-        | Ast.FctSpec fsigexps => FctSpec (List.map (fn (sym, fsigexp) => (sym, convertFsigexp fsigexp)) fsigexps)
-        | Ast.IncludeSpec sigexp => IncludeSpec (convertSigexp sigexp)
-        | Ast.MarkSpec (spec, region) => MarkSpec (convertSpec spec, region)
+          DataSpec {datatycs=List.map (convertDb conversionInfo) datatycs, withtycs=List.map (convertTb conversionInfo) withtycs}
+        | Ast.ExceSpec tys => ExceSpec (List.map (fn (sym, ty) =>
+                                                     (sym, Option.map (convertTy conversionInfo) ty)) tys)
+        | Ast.FctSpec fsigexps => FctSpec (List.map (fn (sym, fsigexp) => (sym, convertFsigexp conversionInfo fsigexp)) fsigexps)
+        | Ast.IncludeSpec sigexp => IncludeSpec (convertSigexp conversionInfo sigexp)
+        | Ast.MarkSpec (spec, region) => MarkSpec (convertSpec conversionInfo spec, region)
         | Ast.ShareStrSpec paths => ShareStrSpec paths
         | Ast.ShareTycSpec paths => ShareTycSpec paths
-        | Ast.StrSpec strs => StrSpec (List.map (fn (sym, sigexp, path) => (sym, convertSigexp sigexp, path)) strs)
+        | Ast.StrSpec strs => StrSpec (List.map (fn (sym, sigexp, path) => (sym, convertSigexp conversionInfo sigexp, path)) strs)
         | Ast.TycSpec (tys, b) =>
           TycSpec (List.map
                        (fn (sym, tyvars, ty) =>
-                           (sym, List.map convertTyvar tyvars, Option.map convertTy ty)) tys
+                           (sym, List.map (convertTyvar conversionInfo) tyvars
+                            , Option.map (convertTy conversionInfo) ty)) tys
                   , b)
-        | Ast.ValSpec tys => ValSpec (List.map (fn (sym, ty) => (sym, convertTy ty)) tys)
+        | Ast.ValSpec tys => ValSpec (List.map (fn (sym, ty) => (sym, convertTy conversionInfo ty)) tys)
 
-  and convertDec dec =
+  and convertDec conversionInfo dec =
       case dec of
-          Ast.AbsDec strbs => AbsDec (List.map convertStrb strbs)
+          Ast.AbsDec strbs => AbsDec (List.map (convertStrb conversionInfo) strbs)
         | Ast.AbstypeDec {abstycs:Ast.db list, body:Ast.dec, withtycs:Ast.tb list} =>
-          AbstypeDec {abstycs=List.map convertDb abstycs
-                     , body = convertDec dec
-                     , withtycs = List.map convertTb withtycs}
+          AbstypeDec {abstycs=List.map (convertDb conversionInfo) abstycs
+                     , body = convertDec conversionInfo dec
+                     , withtycs = List.map (convertTb conversionInfo) withtycs}
         | Ast.DataReplDec (sym, path) => DataReplDec (sym, path)
         | Ast.DatatypeDec {datatycs:Ast.db list, withtycs:Ast.tb list} =>
-          DatatypeDec {datatycs=List.map convertDb datatycs
-                      , withtycs = List.map convertTb withtycs}
-        | Ast.DoDec exp => DoDec (convertExp exp)
-        | Ast.ExceptionDec ebs => ExceptionDec (List.map convertEb ebs)
-        | Ast.FctDec fctbs => FctDec (List.map convertFctb fctbs)
+          DatatypeDec {datatycs=List.map (convertDb conversionInfo) datatycs
+                      , withtycs = List.map (convertTb conversionInfo) withtycs}
+        | Ast.DoDec exp => DoDec (convertExp conversionInfo exp)
+        | Ast.ExceptionDec ebs => ExceptionDec (List.map (convertEb conversionInfo) ebs)
+        | Ast.FctDec fctbs => FctDec (List.map (convertFctb conversionInfo) fctbs)
         | Ast.FixDec {fixity:fixity, ops:symbol list} => FixDec {fixity=fixity, ops=ops}
-        | Ast.FsigDec fsigbs => FsigDec (List.map convertFsigb fsigbs)
-        | Ast.FunDec (fbs, tyvars) => FunDec (List.map convertFb fbs, List.map convertTyvar tyvars)
-        | Ast.LocalDec (d1, d2) => LocalDec (convertDec d1, convertDec d2)
-        | Ast.MarkDec (dec, region) => MarkDec (convertDec dec, region)
+        | Ast.FsigDec fsigbs => FsigDec (List.map (convertFsigb conversionInfo) fsigbs)
+        | Ast.FunDec (fbs, tyvars) => FunDec (List.map (convertFb conversionInfo) fbs
+                                             , List.map (convertTyvar conversionInfo) tyvars)
+        | Ast.LocalDec (d1, d2) => LocalDec (convertDec conversionInfo d1, convertDec conversionInfo d2)
         | Ast.OpenDec paths => OpenDec paths
-        | Ast.OvldDec (symbol, ty, exps) => OvldDec (symbol, convertTy ty, List.map convertExp exps)
-        | Ast.SeqDec decs => SeqDec (List.map convertDec decs)
-        | Ast.SigDec sigbs => SigDec (List.map convertSigb sigbs)
-        | Ast.StrDec strbs => StrDec (List.map convertStrb strbs)
-        | Ast.TypeDec tbs => TypeDec (List.map convertTb tbs)
-        | Ast.ValDec (vbs, tyvars) => ValDec (List.map convertVb vbs, List.map convertTyvar tyvars)
-        | Ast.ValrecDec (rvbs, tyvars) => ValrecDec (List.map convertRvb rvbs, List.map convertTyvar tyvars)
+        | Ast.OvldDec (symbol, ty, exps) => OvldDec (symbol, convertTy conversionInfo ty, List.map (convertExp conversionInfo) exps)
+        | Ast.SeqDec decs => SeqDec (List.map (convertDec conversionInfo) decs)
+        | Ast.SigDec sigbs => SigDec (List.map (convertSigb conversionInfo) sigbs)
+        | Ast.StrDec strbs => StrDec (List.map (convertStrb conversionInfo) strbs)
+        | Ast.TypeDec tbs => TypeDec (List.map (convertTb conversionInfo) tbs)
+        | Ast.ValDec (vbs, tyvars) => ValDec (List.map (convertVb conversionInfo) vbs
+                                             , List.map (convertTyvar conversionInfo) tyvars)
+        | Ast.ValrecDec (rvbs, tyvars) => ValrecDec (List.map (convertRvb conversionInfo) rvbs,
+                                                     List.map (convertTyvar conversionInfo) tyvars)
+        | Ast.MarkDec (dec, region) =>
+          let
+            val line = getLine (#sourceMap conversionInfo) region
+            val () = print (Int.toString line ^ "\n")
+            val () = print (Int.toString (#1 region) ^ " " ^ Int.toString (#2 region) ^ "\n")
+            val comments = #comments conversionInfo
+            val attachedComments =
+                List.filter
+                    (fn (commentLine, comments) => line >= commentLine)
+                    (!comments)
+            val remainingComments =
+                List.filter
+                    (fn (commentLine, comments) => line < commentLine)
+                    (!comments)
+            val () = comments := remainingComments
+            val convertedDec = convertDec conversionInfo dec
+          in
+            case attachedComments of
+                [] => MarkDec (convertedDec, region)
+              | comments  =>
+                CommentDec
+                    (String.concat (List.map (fn (_, x) => String.concat x) comments),
+                     MarkDec (convertedDec, region))
+          end
 
-  and convertVb vb =
+
+  and convertVb conversionInfo vb =
       case vb of
-          Ast.MarkVb (vb, region) => MarkVb (convertVb vb, region)
+          Ast.MarkVb (vb, region) => MarkVb (convertVb conversionInfo vb, region)
         | Ast.Vb {exp:Ast.exp, lazyp:bool, pat:Ast.pat} =>
-          Vb {exp=convertExp exp, lazyp=lazyp, pat=convertPat pat}
+          Vb {exp=convertExp conversionInfo exp, lazyp=lazyp, pat=convertPat conversionInfo pat}
 
-  and convertRvb rvb =
+  and convertRvb conversionInfo rvb =
       case rvb of
-          Ast.MarkRvb (rvb, region) => MarkRvb (convertRvb rvb, region)
+          Ast.MarkRvb (rvb, region) => MarkRvb (convertRvb conversionInfo rvb, region)
         | Ast.Rvb {exp:Ast.exp, fixity:(symbol * region) option, lazyp:bool,
                resultty:Ast.ty option, var:symbol} =>
-          Rvb {exp=convertExp exp, fixity=fixity, lazyp=lazyp
-               , resultty=Option.map convertTy resultty, var=var}
+          Rvb {exp=convertExp conversionInfo exp, fixity=fixity, lazyp=lazyp
+               , resultty=Option.map (convertTy conversionInfo) resultty, var=var}
 
-  and convertFb (Ast.Fb (clauses, b)) = Fb (List.map convertClause clauses, b)
-    | convertFb (Ast.MarkFb (fb, region)) = MarkFb (convertFb fb, region)
+  and convertFb conversionInfo (Ast.Fb (clauses, b)) = Fb (List.map (convertClause conversionInfo) clauses, b)
+    | convertFb conversionInfo (Ast.MarkFb (fb, region)) = MarkFb (convertFb conversionInfo fb, region)
 
-  and convertClause (Ast.Clause {exp:Ast.exp, pats:Ast.pat Ast.fixitem list, resultty:Ast.ty option}) =
-      Clause {exp=convertExp exp, pats=List.map (mapFixitem convertPat) pats
-              , resultty=Option.map convertTy resultty}
+  and convertClause conversionInfo (Ast.Clause {exp:Ast.exp, pats:Ast.pat Ast.fixitem list, resultty:Ast.ty option}) =
+      Clause {exp=convertExp conversionInfo exp, pats=List.map (mapFixitem (convertPat conversionInfo)) pats
+              , resultty=Option.map (convertTy conversionInfo) resultty}
 
-  and convertTb (Ast.MarkTb (tb, region)) = MarkTb (convertTb tb, region)
-    | convertTb (Ast.Tb {def:Ast.ty, tyc:symbol, tyvars:Ast.tyvar list}) = Tb {def=convertTy def, tyc=tyc,
-                                                                   tyvars=List.map convertTyvar tyvars}
+  and convertTb conversionInfo (Ast.MarkTb (tb, region)) = MarkTb (convertTb conversionInfo tb, region)
+    | convertTb conversionInfo (Ast.Tb {def:Ast.ty, tyc:symbol, tyvars:Ast.tyvar list}) =
+      Tb {def=convertTy conversionInfo def, tyc=tyc, tyvars=List.map (convertTyvar conversionInfo) tyvars}
 
-  and convertDb (Ast.Db {lazyp:bool, rhs:(symbol * Ast.ty option) list, tyc:symbol,
+  and convertDb conversionInfo (Ast.Db {lazyp:bool, rhs:(symbol * Ast.ty option) list, tyc:symbol,
                      tyvars:Ast.tyvar list}) =
-      Db {lazyp=lazyp, rhs=List.map (fn (sym, ty) => (sym, Option.map convertTy ty)) rhs
-          , tyc=tyc, tyvars = List.map convertTyvar tyvars}
-    | convertDb (Ast.MarkDb (db, region)) = MarkDb (convertDb db, region)
+      Db {lazyp=lazyp, rhs=List.map (fn (sym, ty) => (sym, Option.map (convertTy conversionInfo) ty)) rhs
+          , tyc=tyc, tyvars = List.map (convertTyvar conversionInfo) tyvars}
+    | convertDb conversionInfo (Ast.MarkDb (db, region)) = MarkDb (convertDb conversionInfo db, region)
 
-  and convertEb eb =
+  and convertEb conversionInfo eb =
       case eb of
           Ast.EbDef {edef:path, exn:symbol} => EbDef {edef=edef, exn=exn}
-        | Ast.EbGen {etype:Ast.ty option, exn:symbol} => EbGen {etype=Option.map convertTy etype, exn=exn}
-        | Ast.MarkEb (eb, region) => MarkEb (convertEb eb, region)
+        | Ast.EbGen {etype:Ast.ty option, exn:symbol} =>
+          EbGen {etype=Option.map (convertTy conversionInfo) etype, exn=exn}
+        | Ast.MarkEb (eb, region) => MarkEb (convertEb conversionInfo eb, region)
 
-  and convertStrb (Ast.MarkStrb (strb, region)) = MarkStrb (convertStrb strb, region)
-    | convertStrb (Ast.Strb {constraint:Ast.sigexp Ast.sigConst, def:Ast.strexp, name:symbol}) =
-      Strb {constraint=mapSigconst convertSigexp constraint, def = convertStrexp def, name=name}
+  and convertStrb conversionInfo (Ast.MarkStrb (strb, region)) = MarkStrb (convertStrb conversionInfo strb, region)
+    | convertStrb conversionInfo (Ast.Strb {constraint:Ast.sigexp Ast.sigConst, def:Ast.strexp, name:symbol}) =
+      Strb {constraint=mapSigconst (convertSigexp conversionInfo) constraint
+           , def = convertStrexp conversionInfo def, name=name}
 
-  and convertFctb (Ast.Fctb {def:Ast.fctexp, name:symbol}) = Fctb {def=convertFctexp def, name=name}
-    | convertFctb (Ast.MarkFctb (fctb, region)) = MarkFctb (convertFctb fctb, region)
+  and convertFctb conversionInfo (Ast.Fctb {def:Ast.fctexp, name:symbol}) = Fctb {def=convertFctexp conversionInfo def, name=name}
+    | convertFctb conversionInfo (Ast.MarkFctb (fctb, region)) = MarkFctb (convertFctb conversionInfo fctb, region)
 
-  and convertSigb (Ast.MarkSigb (sigb, region)) = MarkSigb (convertSigb sigb, region)
-    | convertSigb (Ast.Sigb {def:Ast.sigexp, name:symbol}) = Sigb {def=convertSigexp def, name=name}
+  and convertSigb conversionInfo (Ast.MarkSigb (sigb, region)) = MarkSigb (convertSigb conversionInfo sigb, region)
+    | convertSigb conversionInfo (Ast.Sigb {def:Ast.sigexp, name:symbol}) = Sigb {def=convertSigexp conversionInfo def, name=name}
 
-  and convertFsigb (Ast.Fsigb {def:Ast.fsigexp, name:symbol}) = Fsigb {def=convertFsigexp def, name=name}
-    | convertFsigb (Ast.MarkFsigb (fsigb, region)) = MarkFsigb (convertFsigb fsigb, region)
+  and convertFsigb conversionInfo (Ast.Fsigb {def:Ast.fsigexp, name:symbol}) = Fsigb {def=convertFsigexp conversionInfo def, name=name}
+    | convertFsigb conversionInfo (Ast.MarkFsigb (fsigb, region)) = MarkFsigb (convertFsigb conversionInfo fsigb, region)
 
-  and convertTyvar (Ast.MarkTyv (tyvar, region)) = MarkTyv (convertTyvar tyvar, region)
-    | convertTyvar (Ast.Tyv sym) = Tyv sym
+  and convertTyvar conversionInfo (Ast.MarkTyv (tyvar, region)) = MarkTyv (convertTyvar conversionInfo tyvar, region)
+    | convertTyvar conversionInfo (Ast.Tyv sym) = Tyv sym
 
-  and convertTy ty =
+  and convertTy conversionInfo ty =
       case ty of
-          Ast.ConTy (syms, tys) => ConTy (syms, List.map convertTy tys)
-        | Ast.MarkTy (ty, region) => MarkTy (convertTy ty, region)
-        | Ast.RecordTy tys => RecordTy (List.map (fn (sym, ty) => (sym, convertTy ty)) tys)
-        | Ast.TupleTy tys => TupleTy (List.map convertTy tys)
-        | Ast.VarTy tyvar => VarTy (convertTyvar tyvar)
-
+          Ast.ConTy (syms, tys) => ConTy (syms, List.map (convertTy conversionInfo) tys)
+        | Ast.MarkTy (ty, region) => MarkTy (convertTy conversionInfo ty, region)
+        | Ast.RecordTy tys => RecordTy (List.map (fn (sym, ty) => (sym, convertTy conversionInfo ty)) tys)
+        | Ast.TupleTy tys => TupleTy (List.map (convertTy conversionInfo) tys)
+        | Ast.VarTy tyvar => VarTy (convertTyvar conversionInfo tyvar)
 end

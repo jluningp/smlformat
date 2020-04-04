@@ -2,6 +2,10 @@ group
         structure SMLParser
         structure CommentParser
         structure CommentedAst
+        structure AddComments
+        structure Utils
+        structure IntMap
+        structure Format
 is
       $/basis.cm
       $/smlnj-lib.cm
@@ -12,3 +16,6 @@ is
       parser/commentParser.sml
       parser/smlParser.sml
       ast/commentedAst.sml
+      ast/addComments.sml
+      ast/format.sml
+      utils.sml
