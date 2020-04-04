@@ -25,7 +25,12 @@ fun foo [] = 0
   | foo (x::xs) = x
 
 
-
+val _ =
+    let
+      val x = 10
+    in
+      foo
+    end
 
 
 

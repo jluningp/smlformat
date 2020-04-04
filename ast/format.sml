@@ -37,11 +37,13 @@ structure Format = struct
         | CharExp str => "#\"" ^ str ^ "\""
         | ConstraintExp {constraint:ty, expr:exp} =>
           formatExp formatInfo expr ^ " : " ^ formatTy formatInfo constraint
+        | FlatAppExp [ exp ] => formatExp formatInfo (#item exp)
         | FlatAppExp exps =>
           (* If it's a single character thing or maybe a symbolic thing, or maybe its fixity is infix,
-then  it should be same line as previous thing *)
+           * then  it should be same line as previous thing *)
           let
-
+            (* Indentation on this is broken for the singleton case, since formatExp should
+             * be called with indent, not indent + indentSize  *)
             val exps = List.map (fn exp => formatExp { indent = indent + indentSize } (#item exp)) exps
             fun formatExpsFit [] = []
               | formatExpsFit (e::es) =
@@ -101,11 +103,22 @@ then  it should be same line as previous thing *)
           end
         | IntExp literal => IntInf.toString literal
         | LetExp {dec:dec, expr:exp} =>
-          "let" ^ "\n" ^ (createIndent (indent + indentSize))
-          ^ formatDec { indent = indent + indentSize } dec
-          ^ "\n" ^ (createIndent indent) ^ "in"
-          ^ "\n" ^ (createIndent (indent + indentSize)) ^ formatExp {indent = indent + indentSize } expr
-          ^ "\n" ^ (createIndent indent) ^ "end"
+          let
+            fun reduceSingletonSeq exp =
+                case exp of
+                    MarkExp (exp, region) => MarkExp (reduceSingletonSeq exp, region)
+                  | CommentExp (comment, exp) => CommentExp (comment, reduceSingletonSeq exp)
+                  | FlatAppExp [ exp ] => FlatAppExp [ mapFixitem reduceSingletonSeq exp ]
+                  | SeqExp [ exp ] => reduceSingletonSeq exp
+                  | _ => exp
+          in
+            "let" ^ "\n" ^ (createIndent (indent + indentSize))
+            ^ formatDec { indent = indent + indentSize } dec
+            ^ "\n" ^ (createIndent indent) ^ "in"
+            ^ "\n" ^ (createIndent (indent + indentSize))
+            ^ formatExp {indent = indent + indentSize } (reduceSingletonSeq expr)
+            ^ "\n" ^ (createIndent indent) ^ "end"
+          end
         | ListExp exps => "[" ^ String.concat (intercalate ", " (List.map (formatExp formatInfo) exps)) ^ "]"
         | MarkExp (exp, region) => formatExp formatInfo exp
         | OrelseExp (e1, e2) => formatExp formatInfo e1 ^ " orelse " ^ formatExp formatInfo e2
@@ -154,31 +167,44 @@ then  it should be same line as previous thing *)
 
   and formatRule (formatInfo as {indent}) (Rule {exp:exp, pat:pat}) =
       let
-        val formattedPat = formatPat formatInfo pat
+        val formattedPat = formatPat formatInfo false pat
         val formattedExp = formatExp { indent = indent + indentSize } exp
         val sep =
             if shouldNewline (formattedPat ^ " => " ^ formattedExp)
             then " =>\n" ^ (createIndent (indent + indentSize))
             else " => "
       in
-        formatPat formatInfo pat ^ sep ^ formattedExp
+        formattedPat ^ sep ^ formattedExp
       end
 
-  and formatPat formatInfo pat =
+  and formatPat formatInfo appNeedsParens pat =
       case pat of
-          AppPat {argument:pat, constr:pat} => formatPat formatInfo constr ^ " " ^ formatPat formatInfo argument
+          AppPat {argument:pat, constr:pat} =>
+          formatPat formatInfo true constr ^ " " ^ formatPat formatInfo true argument
         | CharPat str => "#" ^ str
         | ConstraintPat {constraint:ty, pattern:pat} =>
-          formatPat formatInfo pattern ^ " : " ^ formatTy formatInfo constraint
-        | FlatAppPat [ pat ] => formatPat formatInfo (#item pat)
+          formatPat formatInfo appNeedsParens pattern ^ " : " ^ formatTy formatInfo constraint
+        | FlatAppPat [ pat ] => formatPat formatInfo appNeedsParens (#item pat)
         | FlatAppPat pats =>
-          "(" ^ String.concat (intercalate " " (List.map (fn pat => formatPat formatInfo (#item pat)) pats)) ^ ")"
+          let
+            val app =
+                String.concat
+                    (intercalate
+                         " "
+                         (List.map (fn pat => formatPat formatInfo true (#item pat)) pats))
+          in
+            if appNeedsParens
+            then "(" ^ app ^ ")"
+            else app
+          end
         | IntPat l => IntInf.toString l
         | LayeredPat {expPat:pat, varPat:pat} =>
-          "(" ^ formatPat formatInfo varPat ^ " as " ^ formatPat formatInfo expPat ^ ")"
-        | ListPat pats => "[" ^ (String.concat (intercalate ", " (List.map (formatPat formatInfo) pats))) ^ "]"
-        | MarkPat (pat, region) => formatPat formatInfo pat
-        | OrPat pats => String.concat (intercalate " | " (List.map (formatPat formatInfo) pats))
+          "(" ^ formatPat formatInfo false varPat ^ " as " ^ formatPat formatInfo false expPat ^ ")"
+        | ListPat pats =>
+          "[" ^ (String.concat (intercalate ", " (List.map (formatPat formatInfo false) pats))) ^ "]"
+        | MarkPat (pat, region) => formatPat formatInfo appNeedsParens pat
+        | OrPat pats => "(" ^ String.concat (intercalate " | " (List.map (formatPat formatInfo false) pats)) ^ ")"
+        | RecordPat { def = [], flexibility } => "()"
         | RecordPat {def:(symbol * pat) list, flexibility:bool} =>
           let
             fun isVarPat sym pat =
@@ -196,13 +222,14 @@ then  it should be same line as previous thing *)
                      (List.map (fn (sym, pat) =>
                                    if isVarPat sym pat
                                    then Symbol.name sym
-                                   else Symbol.name sym ^ " = " ^ formatPat formatInfo pat) def))
+                                   else Symbol.name sym ^ " = " ^ formatPat formatInfo false pat) def))
             ^ "}"
           end
         | StringPat str => "\"" ^  (String.toString str) ^ "\""
-        | TuplePat pats => "(" ^ String.concat (intercalate ", " (List.map (formatPat formatInfo) pats)) ^ ")"
+        | TuplePat pats => "(" ^ String.concat (intercalate ", " (List.map (formatPat formatInfo false) pats)) ^ ")"
         | VarPat path => pathToString path
-        | VectorPat pats => "#[" ^ String.concat (intercalate ", " (List.map (formatPat formatInfo) pats)) ^ "]"
+        | VectorPat pats =>
+          "#[" ^ String.concat (intercalate ", " (List.map (formatPat formatInfo false) pats)) ^ "]"
         | WildPat => "_"
         | WordPat l => IntInf.toString l
         | CommentPat (comment, pat) => ""
@@ -358,7 +385,7 @@ then  it should be same line as previous thing *)
         | Vb {exp:exp, lazyp:bool, pat:pat} =>
           let
             val formattedExp = formatExp { indent = indent + indentSize } exp
-            val formattedPat = formatPat formatInfo pat
+            val formattedPat = formatPat formatInfo false pat
             val oneLine = formattedPat ^ " = " ^ formattedExp
           in
             if shouldNewline oneLine
@@ -388,7 +415,7 @@ then  it should be same line as previous thing *)
             String.concat
                 (intercalate
                      " "
-                     (List.map (fn pat => formatPat formatInfo (#item pat)) pats))
+                     (List.map (fn pat => formatPat formatInfo true (#item pat)) pats))
         val sep =
             (* Tecnically wrong but redo later *)
             if shouldNewline (formattedPats ^ formattedExp)
