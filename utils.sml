@@ -19,7 +19,7 @@ structure Utils = struct
                 (CommentParser.parse filename)
         val commentedAst =
             AddComments.convertDec {comments=ref comments, sourceMap=(#sourceMap source)} ast
-        val () = print (Format.formatDec {indent=0} commentedAst)
+        val () = TextIO.output (TextIO.stdErr, (Format.formatDec {indent=0} commentedAst))
       in
         (comments,
          commentedAst)
