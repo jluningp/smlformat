@@ -83,18 +83,11 @@ structure Format = struct
               | [ x ] => x
               | x::xs => String.concat (intercalate ("\n" ^ (createIndent (indent))) (x::xs))
           end
-        | FnExp [] => raise Fail "Invalid parse. Function expression has no clauses."
-        | FnExp [rule] => "fn " ^ formatRule formatInfo rule
-        | FnExp (rule::rules) =>
-          let
-            val sep = ("\n" ^ (createIndent (indent + 1)) ^ "| ")
-          in
-            "fn " ^ (formatRule formatInfo rule)
-            ^ sep ^ (String.concat
-                         (intercalate
-                              sep
-                              (List.map (formatRule {indent = indent + 1}) rules)))
-          end
+        | FnExp rules =>
+          "fn " ^ (String.concat
+                       (intercalate
+                            ("\n" ^ (createIndent (indent + 1)) ^ "| ")
+                            (List.map (formatRule {indent = indent + 1}) rules)))
         | HandleExp {expr:exp, rules:rule list} =>
           formatExp formatInfo expr ^ " handle " ^ formatRules { indent = indent + 7 } rules
         | IfExp {elseCase:exp, test:exp, thenCase:exp} =>
@@ -401,23 +394,26 @@ structure Format = struct
         | VarFsig sym => ""
         | CommentFsig (comment, sigexp) => ""
 
-  (*
-    = DataReplSpec of symbol * path
-    | DataSpec of {datatycs:db list, withtycs:tb list}
-    | ExceSpec of (symbol * ty option) list
-    | FctSpec of (symbol * fsigexp) list
-    | IncludeSpec of sigexp
-    | MarkSpec of spec * region
-    | ShareStrSpec of path list
-    | ShareTycSpec of path list
-    | StrSpec of (symbol * sigexp * path option) list
-    | TycSpec of (symbol * tyvar list * ty option) list * bool
-    | ValSpec of (symbol * ty) list
-    *)
   and formatSpec (formatInfo as { indent }) spec =
       case spec of
-          DataReplSpec (symbol, path) => ""
-        | DataSpec {datatycs:db list, withtycs:tb list} => ""
+          DataReplSpec (symbol, path) =>
+          "datatype " ^ Symbol.name symbol ^ " = " ^ pathToString path
+        | DataSpec {datatycs:db list, withtycs:tb list} =>
+          let
+            val withtycs =
+                case withtycs of
+                    [] => ""
+                  | _ => "\n" ^ (createIndent indent) ^ "withtype " ^
+                         (String.concat
+                              (intercalate ("\n" ^ (createIndent indent) ^ "and ")
+                                           (List.map (formatTb { indent = indent + indentSize }) withtycs)))
+          in
+            "datatype " ^
+            (String.concat
+                 (intercalate ("\n" ^ (createIndent indent) ^ "and ")
+                              (List.map (formatDb { indent = indent + indentSize }) datatycs)))
+            ^ withtycs
+          end
         | ExceSpec exns =>
           "exception "
           ^ String.concat
@@ -428,12 +424,13 @@ structure Format = struct
                               Symbol.name sym ^
                               (case ty of
                                    NONE => ""
-                                 | SOME ty => " : " ^ formatTy { indent = indent + indentSize } ty))
+                                 | SOME ty => " of " ^ formatTy { indent = indent + indentSize } ty))
                           exns))
+        (* FctSpec of (symbol * fsigexp) list *)
         | FctSpec fsigexps => ""
         | IncludeSpec sigexp => "include " ^ formatSigexp formatInfo false sigexp
         | MarkSpec (spec, region) => formatSpec formatInfo spec
-        | ShareStrSpec paths => ""
+        | ShareStrSpec paths => "sharing " ^ String.concat (intercalate " = " (List.map pathToString paths))
         | ShareTycSpec paths => "sharing type "
                                 ^ String.concat (intercalate " = " (List.map pathToString paths))
         | StrSpec strs =>
@@ -473,21 +470,66 @@ structure Format = struct
 
   and formatDec (formatInfo as { indent }) dec =
       case dec of
+          (* What is an absdec? *)
           AbsDec strbs => ""
-        | AbstypeDec {abstycs:db list, body:dec, withtycs:tb list} => ""
-        | DataReplDec (sym, path) => ""
-        | DatatypeDec {datatycs:db list, withtycs:tb list} => ""
-        | DoDec exp => ""
-        | ExceptionDec ebs => ""
+        | AbstypeDec {abstycs:db list, body:dec, withtycs:tb list} =>
+          let
+            val withtycs =
+                case withtycs of
+                    [] => ""
+                  | _ =>
+                    "\n" ^ (createIndent indent) ^ "withtype " ^
+                    (String.concat
+                         (intercalate ("\n" ^ (createIndent indent) ^ "and ")
+                                      (List.map (formatTb { indent = indent + indentSize }) withtycs)))
+          in
+            "abstype " ^
+            String.concat
+                (intercalate
+                     ("\n" ^ createIndent (indent + indentSize) ^ "and")
+                     (List.map (formatDb { indent = indent + indentSize }) abstycs))
+            ^ " with\n" ^ (createIndent (indent + indentSize))
+            ^ formatDec { indent = indent + indentSize } body
+            ^ "\n" ^ (createIndent indent) ^ "end"
+            ^ withtycs
+          end
+        | DataReplDec (symbol, path) =>
+          "datatype " ^ Symbol.name symbol ^ " = " ^ pathToString path
+        | DatatypeDec {datatycs:db list, withtycs:tb list} =>
+          let
+            val withtycs =
+                case withtycs of
+                    [] => ""
+                  | _ => "\n" ^ (createIndent indent) ^ "withtype " ^
+                         (String.concat
+                              (intercalate ("\n" ^ (createIndent indent) ^ "and ")
+                                           (List.map (formatTb { indent = indent + indentSize }) withtycs)))
+          in
+            "datatype " ^
+            (String.concat
+                 (intercalate ("\n" ^ (createIndent indent) ^ "and ")
+                              (List.map (formatDb { indent = indent + indentSize }) datatycs)))
+            ^ withtycs
+          end
+        | DoDec exp => "do " ^ "\n" ^ (createIndent (indent + indentSize))
+                       ^ formatExp { indent = indent + indentSize } exp
+        | ExceptionDec ebs =>
+          "exception "
+          ^ String.concat
+                (intercalate
+                     ("\n" ^ createIndent indent ^ "and ")
+                     (List.map (formatEb { indent = indent + indentSize }) ebs))
         | FctDec fctbs =>
-          (* Can you have multiple fctbs here?? *)
+          (* Can you have multiple fctbs here?? Also the an should have an indent *)
           "functor " ^ String.concat (intercalate "\n\nand " (List.map (formatFctb formatInfo) fctbs))
         | SigDec sigbs =>
           "signature " ^ String.concat (intercalate "\n\nand " (List.map (formatSigb formatInfo) sigbs))
         | StrDec strbs =>
           (* Can you have multiple strbs here?? *)
           "structure " ^ String.concat (intercalate "\n\nand " (List.map (formatStrb formatInfo) strbs))
-        | FixDec {fixity:fixity, ops:symbol list} => ""
+        | FixDec {fixity:fixity, ops:symbol list} =>
+          Fixity.fixityToString fixity ^ pathToString ops
+        (* Eventually I'll need to put in functor sigs *)
         | FsigDec fsigbs => ""
         | FunDec (fbs, tyvars) =>
           let
@@ -515,6 +557,7 @@ structure Format = struct
           ^ "\n" ^ (createIndent indent) ^ "end"
         | MarkDec (dec, region) => formatDec formatInfo dec
         | OpenDec paths => "open " ^ (String.concat (intercalate " " (List.map pathToString paths)))
+        (* Not sure if you can write this expression in normal code *)
         | OvldDec (symbol, ty, exps) => ""
         | SeqDec [] => ""
         | SeqDec decs =>
@@ -635,16 +678,35 @@ structure Format = struct
       end
     | formatTb formatInfo (CommentTb (comment, tb)) = ""
 
-  and formatDb formatInfo (Db {lazyp:bool, rhs:(symbol * ty option) list, tyc:symbol,
-                               tyvars:tyvar list}) = ""
-    | formatDb formatInfo (MarkDb (db, region)) = ""
+  and formatDb (formatInfo as { indent })
+               (Db {lazyp:bool, rhs:(symbol * ty option) list, tyc:symbol,
+                    tyvars:tyvar list}) =
+      let
+        fun formatVariant (sym, NONE) = Symbol.name sym
+          | formatVariant (sym, SOME ty) =
+            Symbol.name sym ^ " of " ^ formatTy { indent = indent + indentSize } ty
+      in
+        formatTyvars formatInfo tyvars ^ Symbol.name tyc ^ " = " ^
+        (case rhs of
+             [ variant ] => formatVariant variant
+           | _ =>
+             "\n" ^ createIndent (indent + indentSize + 2)
+             ^ String.concat
+                   (intercalate ("\n" ^ createIndent (indent + indentSize) ^ "| ")
+                                (List.map formatVariant rhs)))
+      end
+    | formatDb formatInfo (MarkDb (db, region)) = formatDb formatInfo db
     | formatDb formatInfo (CommentDb (comment, db)) = ""
 
-  and formatEb formatInfo eb =
+  and formatEb (formatInfo as { indent }) eb =
       case eb of
-          EbDef {edef:path, exn:symbol} => ""
-        | EbGen {etype:ty option, exn:symbol} => ""
-        | MarkEb (eb, region) => ""
+          EbDef {edef:path, exn:symbol} => Symbol.name exn ^ " = " ^ pathToString edef
+        | EbGen {etype:ty option, exn:symbol} =>
+          Symbol.name exn
+          ^ (case etype of
+                 NONE => ""
+               | SOME ty => " of " ^ formatTy { indent = indent + indentSize } ty)
+        | MarkEb (eb, region) => formatEb formatInfo eb
         | CommentEb (comment, eb) => ""
 
   and formatStrb formatInfo (MarkStrb (strb, region)) = formatStrb formatInfo strb
@@ -684,7 +746,7 @@ structure Format = struct
         | ConTy (syms, [ arg ]) =>
           formatTy formatInfo arg ^ " " ^ pathToString syms
         | ConTy ([ sym ], tys) =>
-          (* Fix the parens here *)
+          (* Fix the parens here. They're correct but look bad. *)
           if Symbol.name sym = "->"
           then "(" ^ String.concat (intercalate " -> " (List.map (formatTy formatInfo) tys)) ^ ")"
           else "(" ^ String.concat (intercalate ", " (List.map (formatTy formatInfo) tys)) ^ ") "
