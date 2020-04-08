@@ -60,7 +60,26 @@ structure AddComments = struct
               WhileExp
               {expr = convertExp conversionInfo expr, test = convertExp conversionInfo expr}
           | Ast.WordExp literal => WordExp literal
-          | Ast.MarkExp (exp, region) => MarkExp (convertExp conversionInfo exp, region)
+          | Ast.MarkExp (exp, region) =>
+              let
+                val line = getLine (#sourceMap conversionInfo) region
+                val comments = #comments conversionInfo
+                val attachedComments =
+                  List.filter (fn (commentLine, comments) => line >= commentLine) (! comments)
+
+                val remainingComments =
+                  List.filter (fn (commentLine, comments) => line < commentLine) (! comments)
+
+                val () = comments := remainingComments
+                val convertedExp = convertExp conversionInfo exp
+              in
+                case attachedComments of
+                    [] => MarkExp (convertedExp, region)
+                  | comments =>
+                      CommentExp
+                          (String.concat (List.map (fn (_, x) => String.concat x) comments)
+                          , MarkExp (convertedExp, region))
+              end
 
     and convertRule conversionInfo (Ast.Rule {exp = exp : Ast.exp, pat = pat : Ast.pat}) =
         Rule {exp = convertExp conversionInfo exp, pat = convertPat conversionInfo pat}
@@ -81,7 +100,6 @@ structure AddComments = struct
               LayeredPat
               {expPat = convertPat conversionInfo expPat, varPat = convertPat conversionInfo varPat}
           | Ast.ListPat pats => ListPat (List.map (convertPat conversionInfo) pats)
-          | Ast.MarkPat (pat, region) => MarkPat (convertPat conversionInfo pat, region)
           | Ast.OrPat pats => OrPat (List.map (convertPat conversionInfo) pats)
           | Ast.RecordPat {def = def : (symbol * Ast.pat) list, flexibility = flexibility : bool} =>
               RecordPat
@@ -92,6 +110,7 @@ structure AddComments = struct
           | Ast.VectorPat pats => VectorPat (List.map (convertPat conversionInfo) pats)
           | Ast.WildPat => WildPat
           | Ast.WordPat l => WordPat l
+          | Ast.MarkPat (pat, region) => MarkPat (convertPat conversionInfo pat, region)
 
     and convertStrexp conversionInfo strexp =
         case strexp of

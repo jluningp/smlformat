@@ -244,32 +244,34 @@ structure CommentParser = struct
               else ParseInfo.updatePreviousCharacter info char'
             end
       in
-            case (#previousCharacter parseInfo, char) of
-                (#"*" , #")") =>
-                if ParseInfo.inStringLiteral parseInfo
-                then appendChar char
-                else
-                  if openCommentSymbolCount > 1
-                  then ParseInfo.decOpenCommentSymbolCount (appendChar char)
-                  else
-                    if openCommentSymbolCount = 1
-                    then
-                          (ParseInfo.clearCurrentComment
-                               (ParseInfo.commentEnded
-                                    (ParseInfo.decOpenCommentSymbolCount
-                                         (appendChar char))))
-                    else raise Fail "Parse error: Invalid comments"
-              | (#"\\", #"\\") =>
-                if openCommentSymbolCount > 0 then appendChar char else appendChar (#" ")
-              | (#"\\", #"\"") => appendChar char
-              | (_   , #"\"") =>
-                if openCommentSymbolCount > 0 then appendChar char else ParseInfo.flipInStringLiteral (appendChar char)
-              | (#"(", #"*" ) =>
-                if ParseInfo.inStringLiteral parseInfo
-                then appendChar char
-                else (ParseInfo.incOpenCommentSymbolCount (appendChar char))
-              | (_   , #"\n") => ParseInfo.newLine (appendChar char)
-              | (_   , char ) => appendChar char
+        case (#previousCharacter parseInfo, char) of
+            (#"*" , #")") =>
+            if ParseInfo.inStringLiteral parseInfo
+            then appendChar char
+            else
+              if openCommentSymbolCount > 1
+              then ParseInfo.decOpenCommentSymbolCount (appendChar char)
+              else
+                if openCommentSymbolCount = 1
+                then
+                  (ParseInfo.clearCurrentComment
+                       (ParseInfo.commentEnded
+                            (ParseInfo.decOpenCommentSymbolCount
+                                 (appendChar char))))
+                else raise Fail "Parse error: Invalid comments"
+          | (#"\\", #"\\") =>
+            if openCommentSymbolCount > 0 then appendChar char else appendChar (#" ")
+          | (#"\\", #"\"") => appendChar char
+          | (_   , #"\"") =>
+            if openCommentSymbolCount > 0
+            then appendChar char
+            else ParseInfo.flipInStringLiteral (appendChar char)
+          | (#"(", #"*" ) =>
+            if ParseInfo.inStringLiteral parseInfo
+            then appendChar char
+            else (ParseInfo.incOpenCommentSymbolCount (appendChar char))
+          | (_   , #"\n") => ParseInfo.newLine (appendChar char)
+          | (_   , char ) => appendChar char
       end
 
   fun parse filename =

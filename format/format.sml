@@ -44,7 +44,7 @@ structure Format = struct
             val oneLine = e1 ^ " orelse " ^ e2
           in
             if shouldNewline oneLine
-            then e1 ^ "orelse\n" ^ (createIndent indent) ^ e2
+            then e1 ^ " orelse\n" ^ (createIndent indent) ^ e2
             else oneLine
           end
         | AppExp {argument:exp, function:exp} =>
@@ -59,9 +59,7 @@ structure Format = struct
         | FlatAppExp [ exp ] => formatExp formatInfo (#item exp)
         | FlatAppExp exps =>
           let
-            (* Indentation on this is broken for the singleton case, since formatExp should
-             * be called with indent, not indent + indentSize. However, in the singleton case,
-             * it shouldn't matter, because it should be all on one line anyway  *)
+            (* TODO: Use fixity to more intelligently newline these expressions *)
             val exps = List.map (fn exp => formatExp { indent = indent + indentSize } (#item exp)) exps
             fun formatExpsFit [] = []
               | formatExpsFit (e::es) =
@@ -130,13 +128,15 @@ structure Format = struct
             ^ formatExp {indent = indent + indentSize } (reduceSingletonSeq expr)
             ^ "\n" ^ (createIndent indent) ^ "end"
           end
-        | ListExp exps => "[" ^ String.concat (intercalate ", " (List.map (formatExp formatInfo) exps)) ^ "]"
+        | ListExp exps =>
+          (* TODO: Add newlines to large lists *)
+          "[" ^ String.concat (intercalate ", " (List.map (formatExp formatInfo) exps)) ^ "]"
         | MarkExp (exp, region) => formatExp formatInfo exp
         | RaiseExp e => " raise " ^ formatExp formatInfo e
         | RealExp s => s
         | RecordExp [] => "()"
         | RecordExp exps =>
-          (* This, lists, vectors, and tuples should have multi-line modes *)
+          (* TODO: Add newlines to large records *)
           "{" ^
           String.concat
               (intercalate
@@ -146,9 +146,13 @@ structure Format = struct
         | SelectorExp sym => "#" ^ (Symbol.name sym)
         | SeqExp exps => "(" ^ String.concat (intercalate "; " (List.map (formatExp formatInfo) exps)) ^ ")"
         | StringExp str => "\"" ^  (String.toString str) ^ "\""
-        | TupleExp exps => "(" ^ String.concat (intercalate ", " (List.map (formatExp formatInfo) exps)) ^ ")"
+        | TupleExp exps =>
+          (* TODO: Add newlines to large tuples *)
+          "(" ^ String.concat (intercalate ", " (List.map (formatExp formatInfo) exps)) ^ ")"
         | VarExp path => pathToString path
-        | VectorExp exps => "#[" ^ String.concat (intercalate ", " (List.map (formatExp formatInfo) exps)) ^ "]"
+        | VectorExp exps =>
+          (* TODO: Add newlines to large vectors *)
+          "#[" ^ String.concat (intercalate ", " (List.map (formatExp formatInfo) exps)) ^ "]"
         | WhileExp {expr:exp, test:exp} =>
           let
             fun formatPart part partNewlines =
@@ -166,7 +170,8 @@ structure Format = struct
             "while " ^ test ^ sep ^ "do " ^ expr
           end
         | WordExp literal => IntInf.toString literal
-        | CommentExp (comment, exp) => ""
+        | CommentExp (comment, exp) =>
+          comment ^ "\n" ^ (createIndent indent) ^ formatExp formatInfo exp
 
   and formatRules { indent } rules =
       String.concat
@@ -187,7 +192,8 @@ structure Format = struct
         formattedPat ^ sep ^ formattedExp
       end
 
-  and formatPat formatInfo appNeedsParens pat =
+  and formatPat (formatInfo as { indent }) appNeedsParens pat =
+      (* TODO: newlines in patterns *)
       case pat of
           AppPat {argument:pat, constr:pat} =>
           formatPat formatInfo true constr ^ " " ^ formatPat formatInfo true argument
@@ -268,7 +274,8 @@ structure Format = struct
           "#[" ^ String.concat (intercalate ", " (List.map (formatPat formatInfo false) pats)) ^ "]"
         | WildPat => "_"
         | WordPat l => IntInf.toString l
-        | CommentPat (comment, pat) => ""
+        | CommentPat (comment, pat) =>
+          comment ^ "\n" ^ (createIndent indent) ^ formatPat formatInfo appNeedsParens pat
 
   and formatStrexp (formatInfo as { indent }) strexp =
       case strexp of
@@ -294,11 +301,12 @@ structure Format = struct
           end
         | ConstrainedStr (strexp, sigConst) =>
           formatStrexp formatInfo strexp ^ formatSigconst formatInfo sigConst
-        (* I don't know what this is supposed to look like *)
+        (* TODO: Figure out what a LetStr is. *)
         | LetStr (dec, strexp) => raise Fail "Let structure not supported"
         | MarkStr (strexp, region) => formatStrexp formatInfo strexp
         | VarStr path => pathToString path
-        | CommentStr (comment, strexp) => ""
+        | CommentStr (comment, strexp) =>
+          comment ^ "\n" ^ (createIndent indent) ^ formatStrexp formatInfo strexp
 
   and formatFctexp (formatInfo as { indent }) fctexp =
       case fctexp of
@@ -342,11 +350,12 @@ structure Format = struct
                         params))
           ^ formatSigconst { indent = indent + indentSize } constraint
           ^ " = " ^ formatStrexp formatInfo body
-        (* Wtf is this *)
-        | LetFct (dec, fctexp) => ""
+        (* TODO: Figure out what a LetFct is *)
+        | LetFct (dec, fctexp) => raise Fail "Let functor not supported"
         | MarkFct (fctexp, region) => formatFctexp formatInfo fctexp
         | VarFct (path, sigConst) => pathToString path ^ formatFsigconst formatInfo sigConst
-        | CommentFct (comment, fctexp) => ""
+        | CommentFct (comment, fctexp) =>
+          comment ^ "\n" ^ (createIndent indent) ^ formatFctexp formatInfo fctexp
 
   and formatWherespec formatInfo (WhStruct (sym, def)) = pathToString sym ^ " = " ^ pathToString def
     | formatWherespec formatInfo (WhType (path, tyvars, ty)) =
@@ -373,7 +382,8 @@ structure Format = struct
           end
         | MarkSig (sigexp, region) => formatSigexp formatInfo isFunctorArg sigexp
         | VarSig sym => Symbol.name sym
-        | CommentSig (comment, sigexp) => ""
+        | CommentSig (comment, sigexp) =>
+          comment ^ "\n" ^ (createIndent indent) ^ formatSigexp formatInfo isFunctorArg sigexp
 
   and formatSigconst { indent }  sigConst =
       case sigConst of
@@ -381,6 +391,7 @@ structure Format = struct
         | Opaque sigexp => " :> " ^ formatSigexp { indent = indent + indentSize } false sigexp
         | Transparent sigexp => " : " ^ formatSigexp { indent = indent + indentSize } false sigexp
 
+  (* TODO: Support functor signatures *)
   and formatFsigconst { indent }  sigConst =
       case sigConst of
           NoSig => ""
@@ -393,6 +404,10 @@ structure Format = struct
         | MarkFsig (fsigexp, region) => ""
         | VarFsig sym => ""
         | CommentFsig (comment, sigexp) => ""
+
+  and formatFsigb formatInfo (Fsigb {def:fsigexp, name:symbol}) = ""
+    | formatFsigb formatInfo (MarkFsigb (fsigb, region)) = ""
+    | formatFsigb formatInfo (CommentFsigb (comment, fsigb)) = ""
 
   and formatSpec (formatInfo as { indent }) spec =
       case spec of
@@ -426,8 +441,8 @@ structure Format = struct
                                    NONE => ""
                                  | SOME ty => " of " ^ formatTy { indent = indent + indentSize } ty))
                           exns))
-        (* FctSpec of (symbol * fsigexp) list *)
-        | FctSpec fsigexps => ""
+        (* TODO: Support functor signatures *)
+        | FctSpec fsigexps => raise Fail "Functor signatures not supported"
         | IncludeSpec sigexp => "include " ^ formatSigexp formatInfo false sigexp
         | MarkSpec (spec, region) => formatSpec formatInfo spec
         | ShareStrSpec paths => "sharing " ^ String.concat (intercalate " = " (List.map pathToString paths))
@@ -466,12 +481,13 @@ structure Format = struct
                           (fn (sym, ty) =>
                               Symbol.name sym ^ " : " ^ formatTy { indent = indent + indentSize } ty)
                           syms))
-        | CommentSpec (comment, spec) => ""
+        | CommentSpec (comment, spec) =>
+          comment ^ "\n" ^ (createIndent indent) ^ formatSpec formatInfo spec
 
   and formatDec (formatInfo as { indent }) dec =
       case dec of
-          (* What is an absdec? *)
-          AbsDec strbs => ""
+          (* TODO: Figure out what an absdec is *)
+          AbsDec strbs => raise Fail "Absdec not supported"
         | AbstypeDec {abstycs:db list, body:dec, withtycs:tb list} =>
           let
             val withtycs =
@@ -520,17 +536,18 @@ structure Format = struct
                      ("\n" ^ createIndent indent ^ "and ")
                      (List.map (formatEb { indent = indent + indentSize }) ebs))
         | FctDec fctbs =>
-          (* Can you have multiple fctbs here?? Also the an should have an indent *)
+          (* TODO: The and should have an indent *)
           "functor " ^ String.concat (intercalate "\n\nand " (List.map (formatFctb formatInfo) fctbs))
         | SigDec sigbs =>
+          (* TODO: The and should have an indent *)
           "signature " ^ String.concat (intercalate "\n\nand " (List.map (formatSigb formatInfo) sigbs))
         | StrDec strbs =>
-          (* Can you have multiple strbs here?? *)
+          (* TODO: The and should have an indent *)
           "structure " ^ String.concat (intercalate "\n\nand " (List.map (formatStrb formatInfo) strbs))
         | FixDec {fixity:fixity, ops:symbol list} =>
           Fixity.fixityToString fixity ^ pathToString ops
-        (* Eventually I'll need to put in functor sigs *)
-        | FsigDec fsigbs => ""
+        (* TODO: Support functor signatures *)
+        | FsigDec fsigbs => raise Fail "Functor signatures not supported"
         | FunDec (fbs, tyvars) =>
           let
             val fbs =
@@ -540,6 +557,7 @@ structure Format = struct
                     List.rev ((true, formatFb formatInfo x)::(List.map (fn x => (false, formatFb formatInfo x)) xs))
           in
             "fun "
+            ^ formatTyvars formatInfo tyvars
             ^ (String.concat
                    (intercalate
                         ("\n" ^ (createIndent indent) ^ "and ")
@@ -557,8 +575,8 @@ structure Format = struct
           ^ "\n" ^ (createIndent indent) ^ "end"
         | MarkDec (dec, region) => formatDec formatInfo dec
         | OpenDec paths => "open " ^ (String.concat (intercalate " " (List.map pathToString paths)))
-        (* Not sure if you can write this expression in normal code *)
-        | OvldDec (symbol, ty, exps) => ""
+        (* TODO: Figure out what this dec is *)
+        | OvldDec (symbol, ty, exps) => raise Fail "OvldDec not supported"
         | SeqDec [] => ""
         | SeqDec decs =>
           let
@@ -587,8 +605,8 @@ structure Format = struct
                        (intercalate
                             ("\n" ^ (createIndent indent) ^ "and ")
                             (List.map (formatVb formatInfo) vbs))
-        (* Deal with tyvars here and in fun *)
         | ValrecDec (rvbs, tyvars) => "val rec "
+                                      ^ formatTyvars formatInfo tyvars
                                       ^ String.concat
                                             (intercalate
                                                  ("\n\n" ^ (createIndent indent) ^ "and ")
@@ -599,7 +617,8 @@ structure Format = struct
   and formatVb (formatInfo as { indent }) vb =
       case vb of
           MarkVb (vb, region) => formatVb formatInfo vb
-        | CommentVb (coment, vb) => ""
+        | CommentVb (comment, vb) =>
+          comment ^ "\n" ^ (createIndent indent) ^ formatVb formatInfo vb
         | Vb {exp:exp, lazyp:bool, pat:pat} =>
           let
             val formattedExp = formatExp { indent = indent + indentSize } exp
@@ -613,7 +632,8 @@ structure Format = struct
 
   and formatRvb (formatInfo as { indent }) rvb =
       case rvb of
-          CommentRvb (comment, rvb) => ""
+          CommentRvb (comment, rvb) =>
+          comment ^ "\n" ^ (createIndent indent) ^ formatRvb formatInfo rvb
         | MarkRvb (rvb, region) => formatRvb formatInfo rvb
         | Rvb {exp:exp, fixity:(symbol * region) option, lazyp:bool,
                resultty:ty option, var:symbol} =>
@@ -638,7 +658,8 @@ structure Format = struct
                ("\n" ^ (createIndent (indent + 2)) ^ "| ")
                (List.map (formatClause { indent = indent + indentSize }) clauses))
     | formatFb formatInfo (MarkFb (fb, region)) = formatFb formatInfo fb
-    | formatFb formatInfo (CommentFb (comment, fb)) = ""
+    | formatFb (formatInfo as { indent }) (CommentFb (comment, fb)) =
+      comment ^ "\n" ^ (createIndent indent) ^ formatFb formatInfo fb
 
   and formatClause (formatInfo as { indent }) (Clause {exp:exp, pats:pat fixitem list, resultty:ty option}) =
       let
@@ -648,17 +669,15 @@ structure Format = struct
                 (intercalate
                      " "
                      (List.map (fn pat => formatPat formatInfo true (#item pat)) pats))
-        val sep =
-            (* Tecnically wrong but redo later *)
-            if shouldNewline (formattedPats ^ formattedExp)
-            then " =\n" ^ (createIndent (indent + indentSize))
-            else " = "
         val resultTy =
             case resultty of
                 NONE => ""
               | SOME ty => " : " ^ formatTy formatInfo ty
+        val oneLine = formattedPats ^ resultTy ^ " = " ^ formattedExp
       in
-        formattedPats ^ resultTy ^ sep ^ formattedExp
+        if shouldNewline oneLine
+        then formattedPats ^ resultTy ^ " =\n" ^ createIndent (indent + indentSize) ^ formattedExp
+        else oneLine
       end
 
 
@@ -673,10 +692,11 @@ structure Format = struct
       let
         val tyvars = formatTyvars formatInfo tyvars
       in
-        (* Add a shouldNewline *)
+        (* TODO: Add a newline if this gets too large *)
         tyvars ^ Symbol.name tyc ^ " = " ^ formatTy formatInfo def
       end
-    | formatTb formatInfo (CommentTb (comment, tb)) = ""
+    | formatTb (formatInfo as { indent }) (CommentTb (comment, tb)) =
+      comment ^ "\n" ^ (createIndent indent) ^ formatTb formatInfo tb
 
   and formatDb (formatInfo as { indent })
                (Db {lazyp:bool, rhs:(symbol * ty option) list, tyc:symbol,
@@ -696,7 +716,8 @@ structure Format = struct
                                 (List.map formatVariant rhs)))
       end
     | formatDb formatInfo (MarkDb (db, region)) = formatDb formatInfo db
-    | formatDb formatInfo (CommentDb (comment, db)) = ""
+    | formatDb (formatInfo as { indent }) (CommentDb (comment, db)) =
+      comment ^ "\n" ^ (createIndent indent) ^ formatDb formatInfo db
 
   and formatEb (formatInfo as { indent }) eb =
       case eb of
@@ -707,7 +728,8 @@ structure Format = struct
                  NONE => ""
                | SOME ty => " of " ^ formatTy { indent = indent + indentSize } ty)
         | MarkEb (eb, region) => formatEb formatInfo eb
-        | CommentEb (comment, eb) => ""
+        | CommentEb (comment, eb) =>
+          comment ^ "\n" ^ (createIndent indent) ^ formatEb formatInfo eb
 
   and formatStrb formatInfo (MarkStrb (strb, region)) = formatStrb formatInfo strb
     | formatStrb (formatInfo as { indent }) (Strb {constraint:sigexp sigConst, def:strexp, name:symbol}) =
@@ -720,33 +742,33 @@ structure Format = struct
       in
         Symbol.name name ^ constraint ^ " = " ^ formatStrexp { indent = indent + indentSize } def
       end
-    | formatStrb formatInfo (CommentStrb (comment, strb)) = ""
+    | formatStrb (formatInfo as { indent }) (CommentStrb (comment, strb)) =
+      comment ^ "\n" ^ (createIndent indent) ^ formatStrb formatInfo strb
 
   and formatFctb formatInfo (Fctb {def:fctexp, name:symbol}) =
       Symbol.name name ^ " " ^ formatFctexp formatInfo def
     | formatFctb formatInfo (MarkFctb (fctb, region)) = formatFctb formatInfo fctb
-    | formatFctb formatInfo (CommentFctb (comment, strb)) = ""
+    | formatFctb (formatInfo as { indent }) (CommentFctb (comment, fctb)) =
+      comment ^ "\n" ^ (createIndent indent) ^ formatFctb formatInfo fctb
 
   and formatSigb formatInfo (MarkSigb (sigb, region)) = formatSigb formatInfo sigb
     | formatSigb formatInfo (Sigb {def:sigexp, name:symbol}) =
       Symbol.name name ^ " = " ^ formatSigexp formatInfo false def
-    | formatSigb formatInfo (CommentSigb (comment, sigb)) = ""
-
-  and formatFsigb formatInfo (Fsigb {def:fsigexp, name:symbol}) = ""
-    | formatFsigb formatInfo (MarkFsigb (fsigb, region)) = ""
-    | formatFsigb formatInfo (CommentFsigb (comment, fsigb)) = ""
+    | formatSigb (formatInfo as { indent }) (CommentSigb (comment, sigb)) =
+      comment ^ "\n" ^ (createIndent indent) ^ formatSigb formatInfo sigb
 
   and formatTyvar formatInfo (MarkTyv (tyvar, region)) = formatTyvar formatInfo tyvar
     | formatTyvar formatInfo (Tyv sym) = Symbol.name sym
-    | formatTyvar formatInfo (CommentTyv (comment, tyvar)) = ""
+    | formatTyvar (formatInfo as { indent }) (CommentTyv (comment, tyvar)) =
+      comment ^ "\n" ^ (createIndent indent) ^ formatTyvar formatInfo tyvar
 
-  and formatTy formatInfo ty =
+  and formatTy (formatInfo as { indent }) ty =
       case ty of
           ConTy (syms, []) => pathToString syms
         | ConTy (syms, [ arg ]) =>
           formatTy formatInfo arg ^ " " ^ pathToString syms
         | ConTy ([ sym ], tys) =>
-          (* Fix the parens here. They're correct but look bad. *)
+          (* TODO: Fix the parens here. There are too many of them. *)
           if Symbol.name sym = "->"
           then "(" ^ String.concat (intercalate " -> " (List.map (formatTy formatInfo) tys)) ^ ")"
           else "(" ^ String.concat (intercalate ", " (List.map (formatTy formatInfo) tys)) ^ ") "
@@ -764,6 +786,7 @@ structure Format = struct
         | TupleTy tys =>
           "(" ^ String.concat (intercalate " * " (List.map (formatTy formatInfo) tys)) ^ ")"
         | VarTy tyvar => formatTyvar formatInfo tyvar
-        | CommentTy (comment, ty) => ""
+        | CommentTy (comment, ty) =>
+          comment ^ "\n" ^ (createIndent indent) ^ formatTy formatInfo ty
 
 end

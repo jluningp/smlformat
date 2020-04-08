@@ -17,5 +17,5 @@ is
       parser/smlParser.sml
       ast/commentedAst.sml
       ast/addComments.sml
-      ast/format.sml
-      utils.sml
+      format/format.sml
+      lib/utils.sml
