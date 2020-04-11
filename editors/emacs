@@ -3,6 +3,8 @@
   :type 'string
   :group 'smlformat)
 
+;; Most of the functions below are taken from OCamlFormat's emacs setup 
+;; https://github.com/ocaml-ppx/ocamlformat
 (defun smlformat--goto-line (line)
   (goto-char (point-min))
   (forward-line (1- line)))
