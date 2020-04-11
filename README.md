@@ -1,6 +1,6 @@
 # SMLFormat
 
-SMLFormat is an autoformatter for the Standard ML programing language. It indents, keeps lines under 80 characters, and applies a set of heuristics to prettify code. 
+SMLFormat is an autoformatter for the Standard ML programing language. It indents, keeps lines under 80 characters, and applies a set of heuristics to prettify code.
 
 The source code of SMLFormat is formatted with SMLFormat.
 
@@ -10,15 +10,15 @@ The source code of SMLFormat is formatted with SMLFormat.
 1. Install the [SML/NJ compiler](https://www.smlnj.org).
 2. Clone this git repo: `git clone https://github.com/jluningp/smlformat.git SMLFORMAT_DIR`.
 3. Open `SMLFORMAT_DIR/smlformat` and modify the variable `BASE_DIR` to be your smlformat directory.
-3. Follow the instructions below for editor installation. 
+3. Follow the instructions below for editor installation.
 
 ## Usage
 
-SMLFormat has two modes: stdin and file. In stdin mode, SMLFormat reads SML code from StdIn and outputs formatted code to StdOut. In file mode, SMLFormat reads SML code from an input file and outputs formatted code to an output file. 
+SMLFormat has two modes: stdin and file. In stdin mode, SMLFormat reads SML code from StdIn and outputs formatted code to StdOut. In file mode, SMLFormat reads SML code from an input file and outputs formatted code to an output file.
 
 StdIn mode:
 ```
-$ echo "val {} = {} | SMLFORMAT_DIR/smlformat -i 
+$ echo "val {} = {} | SMLFORMAT_DIR/smlformat -i
 val () = ()
 ```
 
@@ -29,27 +29,32 @@ $ SMLFORMAT_DIR/smlformat input.sml output.sml
 $ cat output.sml
 val () = ()
 ```
+To format a file in place, make input and output the same file:
+```
+$ SMLFORMAT_DIR/smlformat code.sml code.sml
+```
 
-You can also manually run SMLFormat in the SML/NJ REPL by running 
+
+You can also manually run SMLFormat in the SML/NJ REPL by running
 ```
 sml -m SMLFORMAT_DIR/sources.cm
 - SmlFormat.format "input.sml";
 val () = ()
-- 
+-
 ```
 
 ## Editors
-This is all very rough right now. I'm working on improving it, setting up format-on-save, etc. 
+This is all very rough right now. I'm working on improving it, setting up format-on-save, etc.
 ### Emacs
 #### Setup
 1. Copy the code in `editors/emacs` into your `.emacs` (sorry).
 2. Change the smlformat path on the first line (`(defcustom smlformat-command "/home/...`) to be your SMLFormat path.
 3. Reopen emacs
 
-#### Usage 
+#### Usage
 1. Save the file you're working on
 2. `M-x smlformat`
-3. If your file doesn't parse when you run SMLFormat, it'll delete all your code. I'm working on this. 
+3. If your file doesn't parse when you run SMLFormat, it'll delete all your code. I'm working on this.
 
 ### Vim
 #### Setup
@@ -58,11 +63,11 @@ This is all very rough right now. I'm working on improving it, setting up format
 ```
 cp SMLFORMAT_DIR/formatters/vim ~/.vim/plugged/neoformat/autoload/neoformat/formatters/sml.vim
 ```
-3. In sml.vim, replace `exe : '/home/...` with the path to your SMLFormat command. 
+3. In sml.vim, replace `exe : '/home/...` with the path to your SMLFormat command.
 
 #### Usage
 1. `: Neoformat`
-2. If your file doesn't parse when you run SMLFormat, it'll delete all your code. I'm working on this. 
+2. If your file doesn't parse when you run SMLFormat, it'll delete all your code. I'm working on this.
 
 ## Known Issues
 1. Types have too many parentheses around them
