@@ -1,10 +1,11 @@
 function! neoformat#formatters#sml#enabled() abort
     return ['smlformat']
-        endfunction
+    endfunction
 
 function! neoformat#formatters#sml#smlformat() abort
     return {
-        \ 'exe': '/home/jeanne/smlformat/smlformat-vim',
-        \ 'stdin': 1,
-        \ }
+           \ 'exe': '/home/jeanne/smlformat/smlformat',
+           \ 'stdin': 1,
+           \ 'args': ['-i']
+           \ }
     endfunction

@@ -1,5 +1,0 @@
-#!/bin/sh
-tmpfile=$(mktemp /tmp/smlformat.XXXXXX)
-trap 'rm -f -- "$tmpfile"' INT TERM HUP EXIT
-cat <&0 > $tmpfile
-echo "Utils.runTest \"$tmpfile\";" | (sml -m /home/jeanne/smlformat/sources.cm 3>&2 2>&1 1>&3) 2> /dev/null

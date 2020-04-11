@@ -1,2 +1,34 @@
-#!/bin/sh
-echo "Utils.runTest \"$1\";" | (sml -m /home/jeanne/smlformat/sources.cm 3>&2 2>&1 1>&3) 2> /dev/null
+#!/bin/bash
+BASE_DIR="/home/jeanne/smlformat"
+
+while getopts 'ih' flag
+do
+    case "$flag" in
+        i) stdin=true
+           ;;
+        h) echo "Usage: smlformat [-i] [-h] [inputfile] [outputfile]"
+           echo "  -i   read code from stdin and output to stdout"
+           echo "  -h   print this help message"
+           exit 0
+           ;;
+        ?) stdin=false
+        ;;
+    esac
+done
+
+if [ $stdin ]
+then
+    tmpfile=$(mktemp /tmp/smlformat.XXXXXX)
+    trap 'rm -f -- "$tmpfile"' INT TERM HUP EXIT
+    cat <&0 > $tmpfile
+    echo "Smlformat.format \"$tmpfile\";" | (sml -m "$BASE_DIR/sources.cm" 3>&2 2>&1 1>&3) 2> /dev/null
+else
+    if [ $# = 2 ]
+    then
+        echo "Smlformat.format \"$1\";" | (sml -m "$BASE_DIR/sources.cm" 3>&2 2>&1 1>&3) 2> /dev/null 1> $2
+    else
+        echo "smlformat expects two arguments when not run with -i"
+        echo "example: smlformat input.sml output.sml"
+        exit 1
+    fi
+fi

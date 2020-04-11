@@ -84,7 +84,7 @@ structure CommentedAst = struct
     = BaseFsig of {param:(symbol option * sigexp) list, result:sigexp}
     | MarkFsig of fsigexp * region
     | VarFsig of symbol
-    | CommentFsig of comment * sigexp
+    | CommentFsig of comment * fsigexp
   and spec
     = DataReplSpec of symbol * path
     | DataSpec of {datatycs:db list, withtycs:tb list}

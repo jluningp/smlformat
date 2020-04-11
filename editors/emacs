@@ -3,12 +3,6 @@
   :type 'string
   :group 'smlformat)
 
-(defun buffer-whole-string (buffer)
-  (with-current-buffer buffer
-    (save-restriction
-      (widen)
-      (buffer-substring-no-properties (point-min) (point-max)))))
-
 (defun smlformat--goto-line (line)
   (goto-char (point-min))
   (forward-line (1- line)))

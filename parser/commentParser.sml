@@ -1,5 +1,6 @@
 structure CommentParser = struct
   structure ParseInfo = struct
+
     type t = { previousCharacter : char
              , openCommentSymbolCount : int
              , inStringLiteral : bool
