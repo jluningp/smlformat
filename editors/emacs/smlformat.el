@@ -1,4 +1,4 @@
-(defcustom smlformat-command "/home/jeanne/smlformat/smlformat"
+(defcustom smlformat-command "smlformat"
   "smlformat command"
   :type 'string
   :group 'smlformat)

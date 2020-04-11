@@ -1,5 +1,5 @@
 #!/bin/bash
-BASE_DIR="/home/jeanne/smlformat"
+BASE_DIR=$(dirname "$(readlink -f "$0")")
 
 while getopts 'ih' flag
 do

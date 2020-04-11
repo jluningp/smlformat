@@ -4,7 +4,7 @@ function! neoformat#formatters#lprolog#enabled() abort
 
 function! neoformat#formatters#lprolog#smlformat() abort
     return {
-           \ 'exe': '/home/jeanne/smlformat/smlformat',
+           \ 'exe': 'smlformat',
            \ 'stdin': 1,
            \ 'args': ['-i']
            \ }

@@ -4,7 +4,7 @@ function! neoformat#formatters#sml#enabled() abort
 
 function! neoformat#formatters#sml#smlformat() abort
     return {
-           \ 'exe': '/home/jeanne/smlformat/smlformat',
+           \ 'exe': 'smlformat',
            \ 'stdin': 1,
            \ 'args': ['-i']
            \ }
