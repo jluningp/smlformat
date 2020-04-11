@@ -18,7 +18,7 @@ SMLFormat has two modes: stdin and file. In stdin mode, SMLFormat reads SML code
 
 StdIn mode:
 ```
-$ echo "val {} = {} | SMLFORMAT_DIR/smlformat -i
+$ echo "val {} = {}" | SMLFORMAT_DIR/smlformat -i
 val () = ()
 ```
 
@@ -32,6 +32,12 @@ val () = ()
 To format a file in place, make input and output the same file:
 ```
 $ SMLFORMAT_DIR/smlformat code.sml code.sml
+```
+
+If an input fails to parse, SMLFormat cannot format it and will return the original file contents.
+```
+$ echo "val x" | SMLFORMAT_DIR/smlformat -i 
+val x
 ```
 
 
@@ -54,7 +60,7 @@ This is all very rough right now. I'm working on improving it, setting up format
 #### Usage
 1. Save the file you're working on
 2. `M-x smlformat`
-3. If your file doesn't parse when you run SMLFormat, it'll delete all your code. I'm working on this.
+3. If your file doesn't parse when you run SMLFormat, it will not be formatted.
 
 ### Vim
 #### Setup
@@ -67,7 +73,7 @@ cp SMLFORMAT_DIR/formatters/vim ~/.vim/plugged/neoformat/autoload/neoformat/form
 
 #### Usage
 1. `: Neoformat`
-2. If your file doesn't parse when you run SMLFormat, it'll delete all your code. I'm working on this.
+2. If your file doesn't parse when you run SMLFormat, it will not be formatted.
 
 ## Known Issues
 1. Types have too many parentheses around them
