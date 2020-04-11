@@ -1,4 +1,4 @@
-val _ : (int, int)  option = SOME 10
+val _ : (int, int) option = SOME 10
 val _ : int option = SOME 10
 val _ : int = 10
 val _ : 'a option = NONE

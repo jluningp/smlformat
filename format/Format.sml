@@ -871,7 +871,7 @@ structure Format : FORMAT = struct
                 (intercalate " -> " (List.map (formatTy formatInfo) tys)) ^ ")"
             else
               "(" ^ String.concat (intercalate ", " (List.map (formatTy formatInfo) tys))
-                ^ ") "
+                ^ ") " ^ Symbol.name sym
         | ConTy (syms, tys) =>
             "(" ^ String.concat (intercalate ", " (List.map (formatTy formatInfo) tys))
               ^ ") " ^ pathToString syms
