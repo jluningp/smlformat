@@ -18,17 +18,31 @@ done
 
 if [ $stdin ]
 then
-    tmpfile=$(mktemp /tmp/smlformat.XXXXXX)
-    trap 'rm -f -- "$tmpfile"' INT TERM HUP EXIT
-    cat <&0 > $tmpfile
-    echo "SmlFormat.format \"$tmpfile\";" | (sml -m "$BASE_DIR/sources.cm" 3>&2 2>&1 1>&3) 2> /dev/null
+    tmp_infile=$(mktemp /tmp/smlformat.XXXXXX)
+    tmp_outfile=$(mktemp /tmp/smlformat.XXXXXX)
+    trap 'rm -f -- "$tmp_infile"' INT TERM HUP EXIT
+    trap 'rm -f -- "$tmp_outfile"' INT TERM HUP EXIT
+    cat <&0 > $tmp_infile
+    echo "SmlFormat.format \"$tmp_infile\";" | (sml -m "$BASE_DIR/sources.cm" 3>&2 2>&1 1>&3) 2> /dev/null 1> $tmp_outfile
+    if  [ -s $tmp_outfile ]
+    then
+        cat $tmp_outfile
+    else
+        cat $tmp_infile
+    fi
 else
     if [ $# = 2 ]
     then
         tmpfile=$(mktemp /tmp/smlformat.XXXXXX)
         trap 'rm -f -- "$tmpfile"' INT TERM HUP EXIT
         echo "SmlFormat.format \"$1\";" | (sml -m "$BASE_DIR/sources.cm" 3>&2 2>&1 1>&3) 2> /dev/null 1> $tmpfile
-        cat $tmpfile > $2
+        if  [ -s $tmpfile ]
+        then
+            cat $tmpfile > $2
+        else
+            cat $1 > $tmpfile
+            cat $tmpfile > $2
+        fi
     else
         echo "smlformat expects two arguments when not run with -i"
         echo "example: smlformat input.sml output.sml"
