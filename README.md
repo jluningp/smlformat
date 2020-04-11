@@ -74,6 +74,10 @@ cp SMLFORMAT_DIR/formatters/vim ~/.vim/plugged/neoformat/autoload/neoformat/form
 
 #### Usage
 1. `: Neoformat`
+2. If you want to format-on-save, add the following to your vimrc:
+```
+autocmd BufWritePre * Neoformat
+```
 2. If your file doesn't parse when you run SMLFormat, it will not be formatted.
 
 ## Known Issues
