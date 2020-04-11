@@ -1,5 +1,4 @@
 group
-        structure SMLParser
         structure CommentParser
         structure CommentedAst
         structure AddComments
@@ -13,7 +12,6 @@ is
 
       lib/lib.sml
       parser/commentParser.sml
-      parser/smlParser.sml
       ast/commentedAst.sml
       ast/addComments.sml
       format/format.sml
