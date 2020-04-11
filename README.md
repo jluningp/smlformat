@@ -9,8 +9,12 @@ The source code of SMLFormat is formatted with SMLFormat.
 
 1. Install the [SML/NJ compiler](https://www.smlnj.org).
 2. Clone this git repo: `git clone https://github.com/jluningp/smlformat.git SMLFORMAT_DIR`.
-3. Open `SMLFORMAT_DIR/smlformat` and modify the variable `BASE_DIR` to be your smlformat directory.
-3. Follow the instructions below for editor installation.
+3. Add SMLFormat to your path (replacing SMLFORMAT_DIR with your SMLFormat directory): 
+```
+$ echo "PATH=\"\$PATH:SMLFORMAT_DIR\"; export PATH" >> ~/.bashrc
+$ source ~/.bashrc
+```
+4. Follow the instructions below for editor installation.
 
 ## Usage
 
@@ -18,25 +22,25 @@ SMLFormat has two modes: stdin and file. In stdin mode, SMLFormat reads SML code
 
 StdIn mode:
 ```
-$ echo "val {} = {}" | SMLFORMAT_DIR/smlformat -i
+$ echo "val {} = {}" | smlformat -i
 val () = ()
 ```
 
 File mode:
 ```
 $ echo "val {} = {}" > input.sml
-$ SMLFORMAT_DIR/smlformat input.sml output.sml
+$ smlformat input.sml output.sml
 $ cat output.sml
 val () = ()
 ```
 To format a file in place, make input and output the same file:
 ```
-$ SMLFORMAT_DIR/smlformat code.sml code.sml
+$ smlformat code.sml code.sml
 ```
 
 If an input fails to parse, SMLFormat cannot format it and will return the original file contents.
 ```
-$ echo "val x" | SMLFORMAT_DIR/smlformat -i 
+$ echo "val x" | smlformat -i 
 val x
 ```
 
@@ -53,8 +57,7 @@ val () = ()
 This is all very rough right now. I'm working on making it require less copypasting and editing.
 ### Emacs
 #### Setup
-1. Change the smlformat path on the first line of `editors/emacs/smlformat.el` (`(defcustom smlformat-command "/home/...`) to be your SMLFormat path.
-2. If you want to format on save, uncomment the bottom line.  
+1. If you want to format on save, uncomment the bottom line of `editors/emacs/smlformat.el`.  
 3. Add the following line to your `.emacs`, with `SMLFORMAT_DIR` replaced by your SMLFormat directory:
 ```
 (load "SMLFORMAT_DIR/editors/emacs/smlformat.el")
@@ -69,10 +72,9 @@ This is all very rough right now. I'm working on making it require less copypast
 ### Vim
 #### Setup
 1. Install the [Neoformat](https://github.com/sbdchd/neoformat) vim plugin
-2. In each file in `editors/vim`, replace `exe : '/home/...` with the path to your SMLFormat command<sup>1</sup>.
-3. Copy the files in `editors/vim` into Neoformat's formatters directory.
+2. Copy the files in `editors/vim` into Neoformat's formatters directory<sup>1</sup>.
 ```
-cp SMLFORMAT_DIR/editors/vim/* ~/.vim/plugged/neoformat/autoload/neoformat/formatters/
+cp editors/vim/* ~/.vim/plugged/neoformat/autoload/neoformat/formatters/
 ```
 4. To enable formatting on save, add the following to your .vimrc:
 ```
