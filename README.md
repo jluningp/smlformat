@@ -18,7 +18,7 @@ SMLFormat has two modes: stdin and file. In stdin mode, SMLFormat reads SML code
 
 StdIn mode:
 ```
-$ echo "val {} = {} | SMLFORMAT_DIR/smlformat -i
+$ echo "val {} = {}" | SMLFORMAT_DIR/smlformat -i
 val () = ()
 ```
 
