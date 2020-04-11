@@ -11,6 +11,11 @@ is
       $smlnj/viscomp/basics.cm
 
       lib/lib.sml
+#if SMLNJ_MINOR_VERSION >= 83
+      lib/ExtractLiteral.sml
+#else
+      lib/ExtractLiteralOld.sml
+#endif
 
       parser/CommentParser.sml
       parser/CommentParser.sig

@@ -70,7 +70,7 @@ structure AddComments : ADD_COMMENTS = struct
               { elseCase = convertExp conversionInfo elseCase
               , test = convertExp conversionInfo test
               , thenCase = convertExp conversionInfo thenCase }
-        | Ast.IntExp literal => IntExp literal
+        | Ast.IntExp literal => IntExp (ExtractLiteral.extractLiteral literal)
         | Ast.LetExp { dec : Ast.dec, expr : Ast.exp } =>
             LetExp
               { dec = convertDec conversionInfo dec, expr = convertExp conversionInfo expr }
@@ -78,7 +78,7 @@ structure AddComments : ADD_COMMENTS = struct
         | Ast.OrelseExp (e1, e2) =>
             OrelseExp (convertExp conversionInfo e1, convertExp conversionInfo e2)
         | Ast.RaiseExp e => RaiseExp (convertExp conversionInfo e)
-        | Ast.RealExp s => RealExp s
+        | Ast.RealExp s => RealExp (ExtractLiteral.extractRealLiteral s)
         | Ast.RecordExp record =>
             RecordExp (List.map (fn (s, e) => (s, convertExp conversionInfo e)) record)
         | Ast.SelectorExp sym => SelectorExp sym
@@ -90,7 +90,7 @@ structure AddComments : ADD_COMMENTS = struct
         | Ast.WhileExp { expr : Ast.exp, test : Ast.exp } =>
             WhileExp
               { expr = convertExp conversionInfo expr, test = convertExp conversionInfo expr }
-        | Ast.WordExp literal => WordExp literal
+        | Ast.WordExp literal => WordExp (ExtractLiteral.extractLiteral literal)
         | Ast.MarkExp (exp, region) =>
             addComment conversionInfo exp convertExp CommentExp MarkExp region
 
@@ -111,7 +111,7 @@ structure AddComments : ADD_COMMENTS = struct
               , pattern = convertPat conversionInfo pattern }
         | Ast.FlatAppPat pats =>
             FlatAppPat (List.map (mapFixitem (convertPat conversionInfo)) pats)
-        | Ast.IntPat l => IntPat l
+        | Ast.IntPat l => IntPat (ExtractLiteral.extractLiteral l)
         | Ast.LayeredPat { expPat : Ast.pat, varPat : Ast.pat } =>
             LayeredPat
               { expPat = convertPat conversionInfo expPat
@@ -127,7 +127,7 @@ structure AddComments : ADD_COMMENTS = struct
         | Ast.VarPat path => VarPat path
         | Ast.VectorPat pats => VectorPat (List.map (convertPat conversionInfo) pats)
         | Ast.WildPat => WildPat
-        | Ast.WordPat l => WordPat l
+        | Ast.WordPat l => WordPat (ExtractLiteral.extractLiteral l)
         | Ast.MarkPat (pat, region) =>
             addComment conversionInfo pat convertPat CommentPat MarkPat region
 
