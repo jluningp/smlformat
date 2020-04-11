@@ -93,13 +93,20 @@ function."
        (outputfile (make-temp-file "smlformat" nil ext)))
     (call-process smlformat-command nil nil nil buffer-file-name outputfile)
     (smlformat--patch-buffer outputfile)
-    (kill-buffer outputfile)
     (delete-file outputfile)
     ))
 
 (defun smlformat-on-save ()
   (when (eq major-mode 'sml-mode)
-    (smlformat)))
+    (let ((b (current-buffer)))
+      (with-temp-buffer
+        ;; If we don't temporarily remove the smlformat-on-save hook, we'll get stuck
+        ;; in an endless loop, since this function saves
+        (let ((after-save-hook (remove 'smlformat-on-save after-save-hook)))
+          (with-current-buffer b
+            (let ((after-save-hook (remove 'smlformat-on-save after-save-hook)))
+              (smlformat)
+              (save-buffer))))))))
 
 ;; Uncomment this to enable smlformat on save in sml-mode
 ;; (add-hook 'after-save-hook #'smlformat-on-save)
