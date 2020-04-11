@@ -1,4 +1,4 @@
-structure Smlformat = struct
+structure SmlFormat : SML_FORMAT = struct
   fun format filename =
       let
         val source =

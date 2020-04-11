@@ -1,4 +1,4 @@
-structure Format = struct
+structure Format : FORMAT = struct
   open CommentedAst
   val indentSize = 2
   val characters = 85

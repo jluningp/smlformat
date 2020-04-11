@@ -1,4 +1,4 @@
-structure AddComments = struct
+structure AddComments : ADD_COMMENTS = struct
   open CommentedAst
   type conversionInfo = {sourceMap : SourceMap.sourcemap, comments : (int * string list) list ref}
 

@@ -1,4 +1,4 @@
-structure CommentedAst = struct
+structure CommentedAst : COMMENTED_AST = struct
   type fixity = Ast.fixity
   type symbol = Ast.symbol
   type literal = IntInf.int
@@ -176,6 +176,4 @@ structure CommentedAst = struct
     | TupleTy of ty list
     | VarTy of tyvar
     | CommentTy of comment * ty
-
-  fun fromNJDec (ast : Ast.dec) : dec = Unsafe.cast ast
 end

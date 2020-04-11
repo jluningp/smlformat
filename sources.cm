@@ -3,7 +3,7 @@ group
         structure CommentedAst
         structure AddComments
         structure Format
-        structure Smlformat
+        structure SmlFormat
 is
       $/basis.cm
       $/smlnj-lib.cm
@@ -11,8 +11,18 @@ is
       $smlnj/viscomp/basics.cm
 
       lib/lib.sml
-      parser/commentParser.sml
-      ast/commentedAst.sml
-      ast/addComments.sml
-      format/format.sml
-      main/main.sml
+
+      parser/CommentParser.sml
+      parser/CommentParser.sig
+
+      ast/CommentedAst.sml
+      ast/CommentedAst.sig
+
+      ast/AddComments.sml
+      ast/AddComments.sig
+
+      format/Format.sml
+      format/Format.sig
+
+      main/SmlFormat.sml
+      main/SmlFormat.sig

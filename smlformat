@@ -21,11 +21,11 @@ then
     tmpfile=$(mktemp /tmp/smlformat.XXXXXX)
     trap 'rm -f -- "$tmpfile"' INT TERM HUP EXIT
     cat <&0 > $tmpfile
-    echo "Smlformat.format \"$tmpfile\";" | (sml -m "$BASE_DIR/sources.cm" 3>&2 2>&1 1>&3) 2> /dev/null
+    echo "SmlFormat.format \"$tmpfile\";" | (sml -m "$BASE_DIR/sources.cm" 3>&2 2>&1 1>&3) 2> /dev/null
 else
     if [ $# = 2 ]
     then
-        echo "Smlformat.format \"$1\";" | (sml -m "$BASE_DIR/sources.cm" 3>&2 2>&1 1>&3) 2> /dev/null 1> $2
+        echo "SmlFormat.format \"$1\";" | (sml -m "$BASE_DIR/sources.cm" 3>&2 2>&1 1>&3) 2> /dev/null 1> $2
     else
         echo "smlformat expects two arguments when not run with -i"
         echo "example: smlformat input.sml output.sml"

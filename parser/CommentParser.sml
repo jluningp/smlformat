@@ -1,4 +1,4 @@
-structure CommentParser = struct
+structure CommentParser : COMMENT_PARSER = struct
   structure ParseInfo = struct
 
     type t = { previousCharacter : char
