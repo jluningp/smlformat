@@ -63,3 +63,8 @@ cp SMLFORMAT_DIR/formatters/vim ~/.vim/plugged/neoformat/autoload/neoformat/form
 #### Usage
 1. `: Neoformat`
 2. If your file doesn't parse when you run SMLFormat, it'll delete all your code. I'm working on this. 
+
+## Known Issues
+1. Types have too many parentheses around them
+2. Functor signatures get deleted
+3. Indentation with constructors + newlines is weird (maybe an extra indent?)
