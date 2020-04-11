@@ -47,11 +47,18 @@ val () = ()
 
 ### Usage 
 1. Save the file you're working on
-2. M-x smlformat
+2. `M-x smlformat`
 3. If your file doesn't parse when you run SMLFormat, it'll delete all your code. I'm working on this. 
 
 ## Vim
 ### Setup
-1. Install the Neoformat vim plugin
-2. In ~/.vim/plugged/neoformat/autoload/neoformat/formatters, add a file called sml.vim that contains
-the code in editors/vim but replace my home directory path with yours.
+1. Install the [Neoformat](https://github.com/sbdchd/neoformat) vim plugin
+2. Copy the code in `editors/vim` to neoformat/formatters/sml.vim:
+```
+cp SMLFORMAT_DIR/formatters/vim ~/.vim/plugged/neoformat/autoload/neoformat/formatters/sml.vim
+```
+3. In sml.vim, replace `exe : '/home/...` with the path to your SMLFormat command. 
+
+### Usage
+1. `: Neoformat`
+2. If your file doesn't parse when you run SMLFormat, it'll delete all your code. I'm working on this. 
