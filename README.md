@@ -5,16 +5,16 @@ SMLFormat is an autoformatter for the Standard ML programing language. It indent
 The source code of SMLFormat is formatted with SMLFormat.
 
 
-# Installation
+## Installation
 
 1. Install the [SML/NJ compiler](https://www.smlnj.org).
 2. Clone this git repo: `git clone https://github.com/jluningp/smlformat.git SMLFORMAT_DIR`.
 3. Open `SMLFORMAT_DIR/smlformat` and modify the variable `BASE_DIR` to be your smlformat directory.
 3. Follow the instructions below for editor installation. 
 
-# Usage
+## Usage
 
-SMLFormat has two modes: StdIn and file. In StdIn mode, SMLFormat reads SML code from StdIn and outputs formatted code to StdOut. In file mode, SMLFormat reads SML code from an input file and outputs formatted code to an output file. 
+SMLFormat has two modes: stdin and file. In stdin mode, SMLFormat reads SML code from StdIn and outputs formatted code to StdOut. In file mode, SMLFormat reads SML code from an input file and outputs formatted code to an output file. 
 
 StdIn mode:
 ```
@@ -38,27 +38,28 @@ val () = ()
 - 
 ```
 
-# Editors
-## Emacs
-### Setup
-1. Add the code in editors/emacs to your .emacs.
+## Editors
+This is all very rough right now. I'm working on improving it, setting up format-on-save, etc. 
+### Emacs
+#### Setup
+1. Add the code in `editors/emacs` into your .emacs (sorry).
 2. Change the smlformat path on the first line (`(defcustom smlformat-command "/home/...`) to be your SMLFormat path.
 3. Reopen emacs
 
-### Usage 
+#### Usage 
 1. Save the file you're working on
 2. `M-x smlformat`
 3. If your file doesn't parse when you run SMLFormat, it'll delete all your code. I'm working on this. 
 
-## Vim
-### Setup
+### Vim
+#### Setup
 1. Install the [Neoformat](https://github.com/sbdchd/neoformat) vim plugin
-2. Copy the code in `editors/vim` to neoformat/formatters/sml.vim:
+2. Copy the code in `editors/vim` into Neoformat's formatters directory as `sml.vim`:
 ```
 cp SMLFORMAT_DIR/formatters/vim ~/.vim/plugged/neoformat/autoload/neoformat/formatters/sml.vim
 ```
 3. In sml.vim, replace `exe : '/home/...` with the path to your SMLFormat command. 
 
-### Usage
+#### Usage
 1. `: Neoformat`
 2. If your file doesn't parse when you run SMLFormat, it'll delete all your code. I'm working on this. 
