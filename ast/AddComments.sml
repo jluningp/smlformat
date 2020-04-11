@@ -2,7 +2,7 @@ structure AddComments : ADD_COMMENTS = struct
   open CommentedAst
   type conversionInfo = {sourceMap : SourceMap.sourcemap, comments : (int * string list) list ref}
 
-  (* Comments should be sorted in descending order by int *)
+  (* Comments should be sorted in descending order by line *)
   fun getLine sourceMap (left, right) =
       let
         val regions = SourceMap.fileregion sourceMap (left, right)
