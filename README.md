@@ -66,18 +66,19 @@ This is all very rough right now. I'm working on making it require less copypast
 ### Vim
 #### Setup
 1. Install the [Neoformat](https://github.com/sbdchd/neoformat) vim plugin
-2. Copy the code in `editors/vim` into Neoformat's formatters directory as `sml.vim`:
+2. In each file in `editors/vim`, replace `exe : '/home/...` with the path to your SMLFormat command<sup>1</sup>.
+3. Copy the files in `editors/vim` into Neoformat's formatters directory.
 ```
-cp SMLFORMAT_DIR/formatters/vim ~/.vim/plugged/neoformat/autoload/neoformat/formatters/sml.vim
+cp SMLFORMAT_DIR/editors/vim/* ~/.vim/plugged/neoformat/autoload/neoformat/formatters/
 ```
-3. In sml.vim, replace `exe : '/home/...` with the path to your SMLFormat command.
+4. To enable formatting on save, add the following to your .vimrc:
+```
+autocmd BufWritePre *.sml,*.sig Neoformat
+```
+<sup>1</sup> Why is there `sml.vim` and `lprolog.vim`? Vim thinks `.sig` files have filetype `lprolog`
 
 #### Usage
 1. `: Neoformat`
-2. If you want to format-on-save, add the following to your vimrc:
-```
-autocmd BufWritePre * Neoformat
-```
 2. If your file doesn't parse when you run SMLFormat, it will not be formatted.
 
 ## Known Issues
