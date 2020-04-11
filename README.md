@@ -42,7 +42,7 @@ val () = ()
 This is all very rough right now. I'm working on improving it, setting up format-on-save, etc. 
 ### Emacs
 #### Setup
-1. Add the code in `editors/emacs` into your .emacs (sorry).
+1. Copy the code in `editors/emacs` into your `.emacs` (sorry).
 2. Change the smlformat path on the first line (`(defcustom smlformat-command "/home/...`) to be your SMLFormat path.
 3. Reopen emacs
 
