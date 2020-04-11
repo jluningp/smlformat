@@ -53,10 +53,13 @@ val () = ()
 This is all very rough right now. I'm working on making it require less copypasting and editing.
 ### Emacs
 #### Setup
-1. Copy the code in `editors/emacs` into your `.emacs` (sorry).
-2. Change the smlformat path on the first line (`(defcustom smlformat-command "/home/...`) to be your SMLFormat path.
-3. If you want to format on save, uncomment the bottom line.  
-3. Reopen emacs
+1. Change the smlformat path on the first line of `editors/emacs/smlformat.el` (`(defcustom smlformat-command "/home/...`) to be your SMLFormat path.
+2. If you want to format on save, uncomment the bottom line.  
+3. Add the following line to your `.emacs`, with `SMLFORMAT_DIR` replaced by your SMLFormat directory:
+```
+(load "SMLFORMAT_DIR/editors/emacs/smlformat.el")
+```
+4. Reopen emacs
 
 #### Usage
 1. Save the file you're working on
