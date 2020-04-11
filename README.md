@@ -54,7 +54,7 @@ This is all very rough right now. I'm working on improving it, setting up format
 #### Usage
 1. Save the file you're working on
 2. `M-x smlformat`
-3. If your file doesn't parse when you run SMLFormat, it'll delete all your code. I'm working on this.
+3. If your file doesn't parse when you run SMLFormat, it will not be formatted.
 
 ### Vim
 #### Setup
@@ -67,7 +67,7 @@ cp SMLFORMAT_DIR/formatters/vim ~/.vim/plugged/neoformat/autoload/neoformat/form
 
 #### Usage
 1. `: Neoformat`
-2. If your file doesn't parse when you run SMLFormat, it'll delete all your code. I'm working on this.
+2. If your file doesn't parse when you run SMLFormat, it will not be formatted.
 
 ## Known Issues
 1. Types have too many parentheses around them
