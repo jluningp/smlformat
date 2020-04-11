@@ -54,7 +54,6 @@ val () = ()
 ```
 
 ## Editors
-This is all very rough right now. I'm working on making it require less copypasting and editing.
 ### Emacs
 #### Setup
 1. If you want to format on save, uncomment the bottom line of `editors/emacs/smlformat.el`.  
