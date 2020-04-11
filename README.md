@@ -34,6 +34,12 @@ To format a file in place, make input and output the same file:
 $ SMLFORMAT_DIR/smlformat code.sml code.sml
 ```
 
+If a file fails to parse, SMLFormat cannot format it and will return the original file contents.
+```
+$ echo "val x" | SMLFORMAT_DIR/smlformat -i 
+val x
+```
+
 
 You can also manually run SMLFormat in the SML/NJ REPL by running
 ```
