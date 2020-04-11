@@ -7,6 +7,7 @@ structure CommentedAst : COMMENTED_AST = struct
   type region = (Ast.srcpos * Ast.srcpos)
   type path = Symbol.symbol list
   type 'a fixitem = {fixity : Symbol.symbol option, item : 'a, region : Ast.region}
+
   datatype 'a sigConst =
         NoSig
       | Opaque of 'a

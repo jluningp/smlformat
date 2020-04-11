@@ -13,12 +13,14 @@ structure SmlFormat : SML_FORMAT = struct
         val ast = SmlFile.parse source
         val comments =
           IntMap.foldli
-          (fn (line, comment, acc) => (line, List.map (fn (x, _) => x) comment) :: acc) []
-          (CommentParser.parse filename)
+            (fn (line, comment, acc) => (line, List.map (fn (x, _) => x) comment) :: acc)
+            [] (CommentParser.parse filename)
 
         val commentedAst =
-          AddComments.convertDec {comments = ref comments, sourceMap = (#sourceMap source)} ast
+          AddComments.convertDec
+            { comments = ref comments, sourceMap = (#sourceMap source) } ast
       in
-        TextIO.output (TextIO.stdErr, (Format.formatDec {indent = 0} commentedAst))
+        TextIO.output
+          (TextIO.stdErr, (Format.formatDec { indent = 0 } commentedAst))
       end
 end
