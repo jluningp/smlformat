@@ -1,5 +1,5 @@
 structure SmlFormat : SML_FORMAT = struct
-  fun format filename =
+  fun formatted filename =
       let
         val source =
           let
@@ -20,7 +20,15 @@ structure SmlFormat : SML_FORMAT = struct
           AddComments.convertDec
             { comments = ref comments, sourceMap = (#sourceMap source) } ast
       in
-        TextIO.output
-          (TextIO.stdErr, (Format.formatDec { indent = 0 } commentedAst))
+        Format.formatDec { indent = 0 } commentedAst
       end
+
+  fun formatToFile infile outfile =
+      let
+        val out = TextIO.openOut outfile
+      in
+        (TextIO.output (out, formatted infile); TextIO.closeOut out)
+      end
+
+  fun format filename = TextIO.output (TextIO.stdOut, formatted filename)
 end
