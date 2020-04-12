@@ -67,7 +67,7 @@ fun foo x = 10
 
 If an input fails to parse, SMLFormat cannot format it and will return the original file contents.
 ```
-$ echo "val x" | smlformat -i 
+$ echo "val x" | smlformat 
 val x
 ```
 
