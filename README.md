@@ -101,7 +101,7 @@ val () = ()
 ```
 cp editors/vim/* ~/.vim/plugged/neoformat/autoload/neoformat/formatters/
 ```
-4. To enable formatting on save, add the following to your .vimrc:
+3. To enable formatting on save, add the following to your .vimrc:
 ```
 autocmd BufWritePre *.sml,*.sig Neoformat
 ```
