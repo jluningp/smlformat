@@ -8,13 +8,13 @@ do
            ;;
         o) OUTFILE="$OPTARG"
            ;;
-        h) echo echo "Usage: $0 [-i inputfile] [-o outputfile]"
+        h) echo "Usage: smlformat [-i inputfile] [-o outputfile]"
            echo "  -i infile    read code from file instead of stdin"
            echo "  -o outfile   write formatted code to file instead of stdout"
            echo "  -h           print this help message"
            exit 0
            ;;
-        ?) echo "Usage: $0 [-i inputfile] [-o outputfile]"
+        ?) echo "Usage: smlformat [-i inputfile] [-o outputfile]"
         ;;
     esac
 done
