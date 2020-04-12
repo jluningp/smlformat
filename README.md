@@ -65,7 +65,7 @@ $ cat test.sml
 fun foo x = 10
 ```
 
-If an input fails to parse, SMLFormat cannot format it and will return the original file contents.
+If an input fails to parse, SMLFormat cannot format it and will return the original input.
 ```
 $ echo "val x" | smlformat 
 val x
