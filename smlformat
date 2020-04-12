@@ -44,3 +44,6 @@ then
 else
     cat $OUTPUT
 fi
+
+rm "$INPUT"
+rm "$OUTPUT"
