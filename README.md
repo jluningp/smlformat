@@ -18,32 +18,58 @@ $ source ~/.bashrc
 
 ## Usage
 
-SMLFormat has two modes: stdin and file. In stdin mode, SMLFormat reads SML code from StdIn and outputs formatted code to StdOut. In file mode, SMLFormat reads SML code from an input file and outputs formatted code to an output file.
+SMLFormat can read from stdin and write to stdout, or it can take files as arguments. 
 
-StdIn mode:
 ```
-$ echo "val {} = {}" | smlformat -i
-val () = ()
-```
-
-File mode:
-```
-$ echo "val {} = {}" > input.sml
-$ smlformat input.sml output.sml
-$ cat output.sml
-val () = ()
-```
-To format a file in place, make input and output the same file:
-```
-$ smlformat code.sml code.sml
+Usage: smlformat [-i inputfile] [-o outputfile]
+  -i infile    read code from file instead of stdin
+  -o outfile   write formatted code to file instead of stdout
+  -h           print this help message
 ```
 
-If an input fails to parse, SMLFormat cannot format it and will return the original file contents.
+### Examples
+
+Read from file:
 ```
-$ echo "val x" | smlformat -i 
+$ echo "fun foo x =     10" > test.sml
+$ smlformat -i test.sml 
+fun foo x = 10
+```
+
+Write to file:
+```
+$ echo "fun foo x =    10" | smlformat -o test_output.sml
+$ cat test_output.sml
+fun foo x = 10
+```
+
+Read and write files:
+```
+$ echo "fun foo x =     10" > test.sml
+$ smlformat -i test.sml -o test_output.sml
+$ cat test_output.sml
+fun foo x = 10
+```
+
+Read from stdin and write to stdout:
+```
+$ echo "fun foo x =    10" | smlformat
+fun foo x = 10
+```
+
+Format a file "in-place":
+```
+$ echo "fun foo x =     10" > test.sml
+$ smlformat -i test.sml -o test.sml
+$ cat test.sml 
+fun foo x = 10
+```
+
+If an input fails to parse, SMLFormat cannot format it and will return the original input.
+```
+$ echo "val x" | smlformat 
 val x
 ```
-
 
 You can also manually run SMLFormat in the SML/NJ REPL by running
 ```
@@ -75,7 +101,7 @@ val () = ()
 ```
 cp editors/vim/* ~/.vim/plugged/neoformat/autoload/neoformat/formatters/
 ```
-4. To enable formatting on save, add the following to your .vimrc:
+3. To enable formatting on save, add the following to your .vimrc:
 ```
 autocmd BufWritePre *.sml,*.sig Neoformat
 ```
