@@ -91,7 +91,7 @@ function."
   (let*
       ((ext (file-name-extension buffer-file-name t))
        (outputfile (make-temp-file "smlformat" nil ext)))
-    (call-process smlformat-command nil nil nil buffer-file-name outputfile)
+    (call-process smlformat-command nil nil nil "-i" buffer-file-name "-o" outputfile)
     (smlformat--patch-buffer outputfile)
     (delete-file outputfile)
     ))
@@ -109,4 +109,4 @@ function."
               (save-buffer))))))))
 
 ;; Uncomment this to enable smlformat on save in sml-mode
-;; (add-hook 'after-save-hook #'smlformat-on-save)
+(add-hook 'after-save-hook #'smlformat-on-save)

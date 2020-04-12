@@ -1,51 +1,46 @@
 #!/bin/bash
 BASE_DIR=$(dirname "$(readlink -f "$0")")
 
-while getopts 'ih' flag
+while getopts 'i:o:h' flag
 do
     case "$flag" in
-        i) stdin=true
+        i) INFILE="$OPTARG"
            ;;
-        h) echo "Usage: smlformat [-i] [-h] [inputfile] [outputfile]"
-           echo "  -i   read code from stdin and output to stdout"
-           echo "  -h   print this help message"
+        o) OUTFILE="$OPTARG"
+           ;;
+        h) echo echo "Usage: $0 [-i inputfile] [-o outputfile]"
+           echo "  -i infile    read code from file instead of stdin"
+           echo "  -o outfile   write formatted code to file instead of stdout"
+           echo "  -h           print this help message"
            exit 0
            ;;
-        ?) stdin=false
+        ?) echo "Usage: $0 [-i inputfile] [-o outputfile]"
         ;;
     esac
 done
 
-if [ $stdin ]
+INPUT=$(mktemp /tmp/smlformat.XXXXXX)
+OUTPUT=$(mktemp /tmp/smlformat.XXXXXX)
+trap 'rm -f -- "$INPUT"' INT TERM HUP EXIT
+trap 'rm -f -- "$OUTPUT"' INT TERM HUP EXIT
+
+if [ "$INFILE" ]
 then
-    tmp_infile=$(mktemp /tmp/smlformat.XXXXXX)
-    tmp_outfile=$(mktemp /tmp/smlformat.XXXXXX)
-    trap 'rm -f -- "$tmp_infile"' INT TERM HUP EXIT
-    trap 'rm -f -- "$tmp_outfile"' INT TERM HUP EXIT
-    cat <&0 > $tmp_infile
-    echo "SmlFormat.formatToFile \"$tmp_infile\" \"$tmp_outfile\";" | sml -m "$BASE_DIR/sources.cm" > /dev/null
-    if  [ -s $tmp_outfile ]
-    then
-        cat $tmp_outfile
-    else
-        cat $tmp_infile
-    fi
+    cat $INFILE > $INPUT
 else
-    if [ $# = 2 ]
-    then
-        tmpfile=$(mktemp /tmp/smlformat.XXXXXX)
-        trap 'rm -f -- "$tmpfile"' INT TERM HUP EXIT
-        echo "SmlFormat.formatToFile \"$1\" \"$tmpfile\";" | sml -m "$BASE_DIR/sources.cm" > /dev/null
-        if  [ -s $tmpfile ]
-        then
-            cat $tmpfile > $2
-        else
-            cat $1 > $tmpfile
-            cat $tmpfile > $2
-        fi
-    else
-        echo "smlformat expects two arguments when not run with -i"
-        echo "example: smlformat input.sml output.sml"
-        exit 1
-    fi
+    cat <&0 > $INPUT
+fi
+
+echo "SmlFormat.formatToFile \"$INPUT\" \"$OUTPUT\";" | sml -m "$BASE_DIR/sources.cm" > /dev/null
+
+if  [ ! -s $OUTPUT ]
+then
+    cat $INPUT > $OUTPUT
+fi
+
+if [ "$OUTFILE" ]
+then
+    cat $OUTPUT > $OUTFILE
+else
+    cat $OUTPUT
 fi

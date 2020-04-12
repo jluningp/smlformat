@@ -6,6 +6,5 @@ function! neoformat#formatters#lprolog#smlformat() abort
     return {
            \ 'exe': 'smlformat',
            \ 'stdin': 1,
-           \ 'args': ['-i']
            \ }
     endfunction
