@@ -6,3 +6,5 @@ val _ : (int * int) option = NONE
 val _ : {foo : int} = { foo = 10 }
 type ('a, 'b) t = 'a list
 val _ : ('a, 'b) Foo.t = ()
+val _ : int -> int -> int = 10
+val _ : (int -> int) -> int = 10

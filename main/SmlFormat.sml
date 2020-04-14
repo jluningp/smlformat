@@ -11,16 +11,19 @@ structure SmlFormat : SML_FORMAT = struct
           end
 
         val ast = SmlFile.parse source
+
         val comments =
           IntMap.foldli
             (fn (line, comment, acc) => (line, List.map (fn (x, _) => x) comment) :: acc)
-            [] (CommentParser.parse filename)
+            []
+            (CommentParser.parse filename)
 
-        val commentedAst =
-          AddComments.convertDec
-            { comments = ref comments, sourceMap = (#sourceMap source) } ast
+        val elabAst =
+          Elab.elaborate
+            { comments = ref comments, sourceMap = (#sourceMap source) }
+            ast
       in
-        Format.formatDec { indent = 0 } commentedAst
+        Format.formatDec { indent = 0 } elabAst
       end
 
   fun formatToFile infile outfile =

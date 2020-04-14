@@ -1,7 +1,7 @@
 group
         structure CommentParser
-        structure CommentedAst
-        structure AddComments
+        structure ElabAst
+        structure Elab
         structure Format
         structure SmlFormat
 is
@@ -20,11 +20,14 @@ is
       parser/CommentParser.sml
       parser/CommentParser.sig
 
-      ast/CommentedAst.sml
-      ast/CommentedAst.sig
+      parser/FixityParser.sml
+      parser/FixityParser.sig
 
-      ast/AddComments.sml
-      ast/AddComments.sig
+      elab/ElabAst.sml
+      elab/ElabAst.sig
+
+      elab/Elab.sml
+      elab/Elab.sig
 
       format/Format.sml
       format/Format.sig
