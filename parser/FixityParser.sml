@@ -39,10 +39,6 @@ structure FixityParser : FIXITY_PARSER = struct
   fun reverse (FlatApp exps) = FlatApp (List.rev exps)
     | reverse (InfixApp (eL, e, eR)) = InfixApp (reverse eR, e, reverse eL)
 
-  (* This function only accounts for the infixity of built-in functions. All
-   * others are treated as prefix *)
-  (* TODO: Also consider fixity of operators whose fixity
-   * is declared inside the file *)
   fun parseFixExp (fixity, infixR, fixDecs) (InfixApp (eL, exp, eR)) =
       if fixity > 9
       then InfixApp (eL, exp, eR)

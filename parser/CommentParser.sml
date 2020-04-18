@@ -1,17 +1,24 @@
 structure CommentParser : COMMENT_PARSER = struct
   structure ParseInfo = struct
-    type t = {previousCharacter : char, openCommentSymbolCount : int, inStringLiteral : bool, currentComment : string, comments : (string * int) list IntMap.map, currentLineNumber : int, currentColumnNumber : int}
+    type t =
+      { previousCharacter : char
+      , openCommentSymbolCount : int
+      , inStringLiteral : bool
+      , currentComment : string
+      , comments : (string * int) list IntMap.map
+      , currentLineNumber : int
+      , currentColumnNumber : int }
 
     fun flipInStringLiteral
-      { previousCharacter
-      , openCommentSymbolCount
-      , inStringLiteral
-      , currentComment
-      , comments
-      , currentLineNumber
-      , currentColumnNumber }
-      =
-      { previousCharacter = previousCharacter
+        { previousCharacter
+        , openCommentSymbolCount
+        , inStringLiteral
+        , currentComment
+        , comments
+        , currentLineNumber
+        , currentColumnNumber }
+        =
+        { previousCharacter = previousCharacter
         , openCommentSymbolCount = openCommentSymbolCount
         , inStringLiteral = not inStringLiteral
         , currentComment = currentComment
@@ -20,16 +27,16 @@ structure CommentParser : COMMENT_PARSER = struct
         , currentColumnNumber = currentColumnNumber }
 
     fun updatePreviousCharacter
-      { previousCharacter
-      , openCommentSymbolCount
-      , inStringLiteral
-      , currentComment
-      , comments
-      , currentLineNumber
-      , currentColumnNumber }
-      char
-      =
-      { previousCharacter = char
+        { previousCharacter
+        , openCommentSymbolCount
+        , inStringLiteral
+        , currentComment
+        , comments
+        , currentLineNumber
+        , currentColumnNumber }
+        char
+        =
+        { previousCharacter = char
         , openCommentSymbolCount = openCommentSymbolCount
         , inStringLiteral = inStringLiteral
         , currentComment = currentComment
@@ -38,16 +45,16 @@ structure CommentParser : COMMENT_PARSER = struct
         , currentColumnNumber = currentColumnNumber }
 
     fun appendToCurrentComment
-      { previousCharacter
-      , openCommentSymbolCount
-      , inStringLiteral
-      , currentComment
-      , comments
-      , currentLineNumber
-      , currentColumnNumber }
-      char
-      =
-      { previousCharacter = previousCharacter
+        { previousCharacter
+        , openCommentSymbolCount
+        , inStringLiteral
+        , currentComment
+        , comments
+        , currentLineNumber
+        , currentColumnNumber }
+        char
+        =
+        { previousCharacter = previousCharacter
         , openCommentSymbolCount = openCommentSymbolCount
         , inStringLiteral = inStringLiteral
         , currentComment = currentComment ^ String.str char
@@ -56,15 +63,15 @@ structure CommentParser : COMMENT_PARSER = struct
         , currentColumnNumber = currentColumnNumber }
 
     fun clearCurrentComment
-      { previousCharacter
-      , openCommentSymbolCount
-      , inStringLiteral
-      , currentComment
-      , comments
-      , currentLineNumber
-      , currentColumnNumber }
-      =
-      { previousCharacter = previousCharacter
+        { previousCharacter
+        , openCommentSymbolCount
+        , inStringLiteral
+        , currentComment
+        , comments
+        , currentLineNumber
+        , currentColumnNumber }
+        =
+        { previousCharacter = previousCharacter
         , openCommentSymbolCount = openCommentSymbolCount
         , inStringLiteral = inStringLiteral
         , currentComment = "(*"
@@ -74,16 +81,17 @@ structure CommentParser : COMMENT_PARSER = struct
 
     fun inStringLiteral (t : t) = #inStringLiteral t
     fun openCommentSymbolCount (t : t) = #openCommentSymbolCount t
+
     fun incOpenCommentSymbolCount
-      { previousCharacter
-      , openCommentSymbolCount
-      , inStringLiteral
-      , currentComment
-      , comments
-      , currentLineNumber
-      , currentColumnNumber }
-      =
-      { previousCharacter = previousCharacter
+        { previousCharacter
+        , openCommentSymbolCount
+        , inStringLiteral
+        , currentComment
+        , comments
+        , currentLineNumber
+        , currentColumnNumber }
+        =
+        { previousCharacter = previousCharacter
         , openCommentSymbolCount = openCommentSymbolCount + 1
         , inStringLiteral = inStringLiteral
         , currentComment = currentComment
@@ -92,15 +100,15 @@ structure CommentParser : COMMENT_PARSER = struct
         , currentColumnNumber = currentColumnNumber }
 
     fun decOpenCommentSymbolCount
-      { previousCharacter
-      , openCommentSymbolCount
-      , inStringLiteral
-      , currentComment
-      , comments
-      , currentLineNumber
-      , currentColumnNumber }
-      =
-      { previousCharacter = previousCharacter
+        { previousCharacter
+        , openCommentSymbolCount
+        , inStringLiteral
+        , currentComment
+        , comments
+        , currentLineNumber
+        , currentColumnNumber }
+        =
+        { previousCharacter = previousCharacter
         , openCommentSymbolCount = openCommentSymbolCount - 1
         , inStringLiteral = inStringLiteral
         , currentComment = currentComment
@@ -114,33 +122,35 @@ structure CommentParser : COMMENT_PARSER = struct
           | SOME datas => IntMap.insert (map, key, data :: datas)
 
     fun commentEnded
-      { previousCharacter
-      , openCommentSymbolCount
-      , inStringLiteral
-      , currentComment
-      , comments
-      , currentLineNumber
-      , currentColumnNumber }
-      =
-      { previousCharacter = previousCharacter
+        { previousCharacter
+        , openCommentSymbolCount
+        , inStringLiteral
+        , currentComment
+        , comments
+        , currentLineNumber
+        , currentColumnNumber }
+        =
+        { previousCharacter = previousCharacter
         , openCommentSymbolCount = openCommentSymbolCount
         , inStringLiteral = inStringLiteral
         , currentComment = currentComment
-        , comments = insertMultiMap comments currentLineNumber
+        , comments = insertMultiMap
+          comments
+          currentLineNumber
           (currentComment, currentColumnNumber - 1)
         , currentLineNumber = currentLineNumber
         , currentColumnNumber = currentColumnNumber }
 
     fun newLine
-      { previousCharacter
-      , openCommentSymbolCount
-      , inStringLiteral
-      , currentComment
-      , comments
-      , currentLineNumber
-      , currentColumnNumber }
-      =
-      { previousCharacter = previousCharacter
+        { previousCharacter
+        , openCommentSymbolCount
+        , inStringLiteral
+        , currentComment
+        , comments
+        , currentLineNumber
+        , currentColumnNumber }
+        =
+        { previousCharacter = previousCharacter
         , openCommentSymbolCount = openCommentSymbolCount
         , inStringLiteral = inStringLiteral
         , currentComment = currentComment
@@ -149,15 +159,15 @@ structure CommentParser : COMMENT_PARSER = struct
         , currentColumnNumber = 0 }
 
     fun incColumn
-      { previousCharacter
-      , openCommentSymbolCount
-      , inStringLiteral
-      , currentComment
-      , comments
-      , currentLineNumber
-      , currentColumnNumber }
-      =
-      { previousCharacter = previousCharacter
+        { previousCharacter
+        , openCommentSymbolCount
+        , inStringLiteral
+        , currentComment
+        , comments
+        , currentLineNumber
+        , currentColumnNumber }
+        =
+        { previousCharacter = previousCharacter
         , openCommentSymbolCount = openCommentSymbolCount
         , inStringLiteral = inStringLiteral
         , currentComment = currentComment
@@ -175,36 +185,42 @@ structure CommentParser : COMMENT_PARSER = struct
       , currentColumnNumber = 0 }
 
     fun toString
-      { previousCharacter
-      , openCommentSymbolCount
-      , inStringLiteral
-      , currentComment
-      , comments
-      , currentLineNumber
-      , currentColumnNumber }
-      =
-      "((previousCharacter " ^ String.toString (String.str previousCharacter) ^
-          ") (openCommentSymbolCount " ^ Int.toString openCommentSymbolCount ^
-          ") (inStringLiteral " ^ Bool.toString inStringLiteral ^
-          ") (currentComment " ^ String.toString currentComment ^
-          ") (comments [opaque]) (currentLineNumber " ^ Int.toString
-          currentLineNumber ^ ") (currentColumnNumber " ^ Int.toString
-          currentColumnNumber ^ "))"
+        { previousCharacter
+        , openCommentSymbolCount
+        , inStringLiteral
+        , currentComment
+        , comments
+        , currentLineNumber
+        , currentColumnNumber }
+        =
+        "((previousCharacter " ^ String.toString (String.str previousCharacter)
+        ^ ") (openCommentSymbolCount "
+        ^ Int.toString openCommentSymbolCount
+        ^ ") (inStringLiteral "
+        ^ Bool.toString inStringLiteral
+        ^ ") (currentComment "
+        ^ String.toString currentComment
+        ^ ") (comments [opaque]) (currentLineNumber "
+        ^ Int.toString currentLineNumber
+        ^ ") (currentColumnNumber "
+        ^ Int.toString currentColumnNumber
+        ^ "))"
   end
 
   fun fold_stream
-    (f : (('a * TextIO.elem) -> 'a))
-    (base : 'a)
-    (instream : TextIO.StreamIO.instream)
-     : 'a
-    =
-    case TextIO.StreamIO.input1 instream of
+      (f : 'a * TextIO.elem -> 'a)
+      (base : 'a)
+      (instream : TextIO.StreamIO.instream)
+      : 'a
+      =
+      case TextIO.StreamIO.input1 instream of
           NONE => base
         | SOME (elem, instream) => fold_stream f (f (base, elem)) instream
 
   fun combine (parseInfo : ParseInfo.t, char) =
       let
         val openCommentSymbolCount = ParseInfo.openCommentSymbolCount parseInfo
+
         fun appendChar char' =
             let
               val info =
@@ -228,8 +244,8 @@ structure CommentParser : COMMENT_PARSER = struct
                   if openCommentSymbolCount = 1
                   then
                     (ParseInfo.clearCurrentComment
-                      (ParseInfo.commentEnded
-                        (ParseInfo.decOpenCommentSymbolCount (appendChar char))))
+                       (ParseInfo.commentEnded
+                          (ParseInfo.decOpenCommentSymbolCount (appendChar char))))
                   else raise Fail "Parse error: Invalid comments"
           | (#"\\", #"\\") =>
               if openCommentSymbolCount > 0 then appendChar char else appendChar (#" ")

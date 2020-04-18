@@ -11,11 +11,3 @@ end
 structure IntSet = SplaySetFn (IntKey)
 structure IntMap = SplayMapFn (IntKey)
 structure StringMap = SplayMapFn (StringKey)
-
-fun mapToString f map =
-    "{| "
-    ^ StringMap.foldli
-      (fn (key, value, acc) => acc ^ "(" ^ key ^ ", " ^ f value ^ ") ")
-      ""
-      map
-    ^ "|}"

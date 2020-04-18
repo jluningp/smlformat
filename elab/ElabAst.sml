@@ -6,7 +6,9 @@ structure ElabAst : ELAB_AST = struct
   type comment = string list
   type region = Ast.srcpos * Ast.srcpos
   type path = Symbol.symbol list
-  type 'a fixitem = {fixity : Symbol.symbol option, item : 'a, region : Ast.region}
+
+  type 'a fixitem =
+    { fixity : Symbol.symbol option, item : 'a, region : Ast.region }
 
   datatype 'a sigConst =
         NoSig
@@ -15,16 +17,16 @@ structure ElabAst : ELAB_AST = struct
 
   datatype exp =
         AndalsoExp of exp * exp
-      | AppExp of {argument : exp, function : exp}
-      | CaseExp of {expr : exp, rules : rule list}
+      | AppExp of { argument : exp, function : exp }
+      | CaseExp of { expr : exp, rules : rule list }
       | CharExp of string
-      | ConstraintExp of {constraint : ty, expr : exp}
+      | ConstraintExp of { constraint : ty, expr : exp }
       | FixAppExp of exp FixityParser.fixexp
       | FnExp of rule list
-      | HandleExp of {expr : exp, rules : rule list}
-      | IfExp of {elseCase : exp, test : exp, thenCase : exp}
+      | HandleExp of { expr : exp, rules : rule list }
+      | IfExp of { elseCase : exp, test : exp, thenCase : exp }
       | IntExp of literal
-      | LetExp of {dec : dec, expr : exp}
+      | LetExp of { dec : dec, expr : exp }
       | ListExp of exp list
       | MarkExp of exp * region
       | OrelseExp of exp * exp
@@ -37,21 +39,21 @@ structure ElabAst : ELAB_AST = struct
       | TupleExp of exp list
       | VarExp of path
       | VectorExp of exp list
-      | WhileExp of {expr : exp, test : exp}
+      | WhileExp of { expr : exp, test : exp }
       | WordExp of literal
       | CommentExp of comment * exp
-  and rule = Rule of {exp : exp, pat : pat}
+  and rule = Rule of { exp : exp, pat : pat }
   and pat =
-        AppPat of {argument : pat, constr : pat}
+        AppPat of { argument : pat, constr : pat }
       | CharPat of string
-      | ConstraintPat of {constraint : ty, pattern : pat}
+      | ConstraintPat of { constraint : ty, pattern : pat }
       | FlatAppPat of pat fixitem list
       | IntPat of literal
-      | LayeredPat of {expPat : pat, varPat : pat}
+      | LayeredPat of { expPat : pat, varPat : pat }
       | ListPat of pat list
       | MarkPat of pat * region
       | OrPat of pat list
-      | RecordPat of {def : (symbol * pat) list, flexibility : bool}
+      | RecordPat of { def : (symbol * pat) list, flexibility : bool }
       | StringPat of string
       | TuplePat of pat list
       | VarPat of path
@@ -70,7 +72,9 @@ structure ElabAst : ELAB_AST = struct
       | CommentStr of comment * strexp
   and fctexp =
         AppFct of path * (strexp * bool) list * fsigexp sigConst
-      | BaseFct of {body : strexp, constraint : sigexp sigConst, params : (symbol option * sigexp) list}
+      | BaseFct of { body : strexp
+      , constraint : sigexp sigConst
+      , params : (symbol option * sigexp) list }
       | LetFct of dec * fctexp
       | MarkFct of fctexp * region
       | VarFct of path * fsigexp sigConst
@@ -85,13 +89,13 @@ structure ElabAst : ELAB_AST = struct
       | VarSig of symbol
       | CommentSig of comment * sigexp
   and fsigexp =
-        BaseFsig of {param : (symbol option * sigexp) list, result : sigexp}
+        BaseFsig of { param : (symbol option * sigexp) list, result : sigexp }
       | MarkFsig of fsigexp * region
       | VarFsig of symbol
       | CommentFsig of comment * fsigexp
   and spec =
         DataReplSpec of symbol * path
-      | DataSpec of {datatycs : db list, withtycs : tb list}
+      | DataSpec of { datatycs : db list, withtycs : tb list }
       | ExceSpec of (symbol * ty option) list
       | FctSpec of (symbol * fsigexp) list
       | IncludeSpec of sigexp
@@ -104,13 +108,13 @@ structure ElabAst : ELAB_AST = struct
       | CommentSpec of comment * spec
   and dec =
         AbsDec of strb list
-      | AbstypeDec of {abstycs : db list, body : dec, withtycs : tb list}
+      | AbstypeDec of { abstycs : db list, body : dec, withtycs : tb list }
       | DataReplDec of symbol * path
-      | DatatypeDec of {datatycs : db list, withtycs : tb list}
+      | DatatypeDec of { datatycs : db list, withtycs : tb list }
       | DoDec of exp
       | ExceptionDec of eb list
       | FctDec of fctb list
-      | FixDec of {fixity : fixity, ops : symbol list}
+      | FixDec of { fixity : fixity, ops : symbol list }
       | FsigDec of fsigb list
       | FunDec of fb list * tyvar list
       | LocalDec of dec * dec
@@ -126,44 +130,48 @@ structure ElabAst : ELAB_AST = struct
       | CommentDec of comment * dec
   and vb =
         MarkVb of vb * region
-      | Vb of {exp : exp, lazyp : bool, pat : pat}
+      | Vb of { exp : exp, lazyp : bool, pat : pat }
       | CommentVb of comment * vb
   and rvb =
         MarkRvb of rvb * region
-      | Rvb of {exp : exp, fixity : (symbol * region) option, lazyp : bool, resultty : ty option, var : symbol}
+      | Rvb of { exp : exp
+      , fixity : (symbol * region) option
+      , lazyp : bool
+      , resultty : ty option
+      , var : symbol }
       | CommentRvb of comment * rvb
   and fb =
         Fb of clause list * bool
       | MarkFb of fb * region
       | CommentFb of comment * fb
-  and clause = Clause of {exp : exp, pats : pat fixitem list, resultty : ty option}
+  and clause = Clause of { exp : exp, pats : pat fixitem list, resultty : ty option }
   and tb =
         MarkTb of tb * region
-      | Tb of {def : ty, tyc : symbol, tyvars : tyvar list}
+      | Tb of { def : ty, tyc : symbol, tyvars : tyvar list }
       | CommentTb of comment * tb
   and db =
-        Db of {lazyp : bool, rhs : (symbol * ty option) list, tyc : symbol, tyvars : tyvar list}
+        Db of { lazyp : bool, rhs : (symbol * ty option) list, tyc : symbol, tyvars : tyvar list }
       | MarkDb of db * region
       | CommentDb of comment * db
   and eb =
-        EbDef of {edef : path, exn : symbol}
-      | EbGen of {etype : ty option, exn : symbol}
+        EbDef of { edef : path, exn : symbol }
+      | EbGen of { etype : ty option, exn : symbol }
       | MarkEb of eb * region
       | CommentEb of comment * eb
   and strb =
         MarkStrb of strb * region
-      | Strb of {constraint : sigexp sigConst, def : strexp, name : symbol}
+      | Strb of { constraint : sigexp sigConst, def : strexp, name : symbol }
       | CommentStrb of comment * strb
   and fctb =
-        Fctb of {def : fctexp, name : symbol}
+        Fctb of { def : fctexp, name : symbol }
       | MarkFctb of fctb * region
       | CommentFctb of comment * fctb
   and sigb =
         MarkSigb of sigb * region
-      | Sigb of {def : sigexp, name : symbol}
+      | Sigb of { def : sigexp, name : symbol }
       | CommentSigb of comment * sigb
   and fsigb =
-        Fsigb of {def : fsigexp, name : symbol}
+        Fsigb of { def : fsigexp, name : symbol }
       | MarkFsigb of fsigb * region
       | CommentFsigb of comment * fsigb
   and tyvar =

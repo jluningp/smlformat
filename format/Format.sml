@@ -56,12 +56,19 @@ structure Format : FORMAT = struct
         | FixAppExp (FixityParser.FlatApp [ exp ]) => formatExp formatInfo exp
         | FixAppExp exps =>
             let
+              fun intercalateWithBang sep [] = []
+                | intercalateWithBang sep [ x ] = [ x ]
+                | intercalateWithBang sep (x :: xs) =
+                  if x = "!"
+                  then x :: (intercalateWithBang sep xs)
+                  else x :: sep :: (intercalateWithBang sep xs)
+
               fun format (FixityParser.FlatApp (exp :: exps)) =
                   let
                     val func = formatExp formatInfo exp
                     val args = List.map (formatExp { indent = indent + indentSize }) exps
                     val argNewline = "\n" ^ (createIndent (indent + indentSize))
-                    val oneLine = String.concat (intercalate " " (func :: args))
+                    val oneLine = String.concat (intercalateWithBang " " (func :: args))
                   in
                     if shouldNewline oneLine
                     then func ^ argNewline ^ String.concat (intercalate argNewline args)
@@ -867,7 +874,9 @@ structure Format : FORMAT = struct
         val formattedExp = formatExp { indent = indent + indentSize } exp
 
         val formattedPats =
-          List.map (fn pat => formatPat formatInfo true (#item pat)) pats
+          List.map
+            (fn pat => formatPat { indent = indent + indentSize } true (#item pat))
+            pats
 
         val patNewlines = shouldNewline (String.concat formattedPats)
         val newline = "\n" ^ createIndent (indent + indentSize)
@@ -876,17 +885,14 @@ structure Format : FORMAT = struct
           let
             val sep = if patNewlines then newline else " "
           in
-            String.concat
-              (intercalate
-                 sep
-                 (List.map (fn pat => formatPat formatInfo true (#item pat)) pats))
+            String.concat (intercalate sep formattedPats)
           end
 
         val resultTy =
           case resultty of
               NONE => ""
             | SOME ty =>
-                (if patNewlines then newline else "") ^ " : " ^ formatTy formatInfo ty
+                (if patNewlines then newline else " ") ^ ": " ^ formatTy formatInfo ty
 
         val oneLine = formattedPats ^ resultTy ^ " = " ^ formattedExp
       in

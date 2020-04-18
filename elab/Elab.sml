@@ -33,12 +33,10 @@ structure Elab : ELAB = struct
         val comments = #comments conversionInfo
 
         val attachedComments =
-          List.filter
-            (fn (commentLine, comments) => line >= commentLine)
-            (! comments)
+          List.filter (fn (commentLine, comments) => line >= commentLine) (!comments)
 
         val remainingComments =
-          List.filter (fn (commentLine, comments) => line < commentLine) (! comments)
+          List.filter (fn (commentLine, comments) => line < commentLine) (!comments)
 
         val () = comments := remainingComments
         val converted = convert conversionInfo value
@@ -72,7 +70,7 @@ structure Elab : ELAB = struct
             FixAppExp
               (FixityParser.map
                  (fn exp => convertExp conversionInfo (#item exp))
-                 (FixityParser.parse (! (#fixity conversionInfo)) exps))
+                 (FixityParser.parse (!(#fixity conversionInfo)) exps))
         | Ast.FnExp rules => FnExp (List.map (convertRule conversionInfo) rules)
         | Ast.HandleExp { expr : Ast.exp, rules : Ast.rule list } =>
             HandleExp
@@ -294,7 +292,6 @@ structure Elab : ELAB = struct
                         (fn map => StringMap.insert (map, Symbol.name sym, fixity))
                         fixitymap)
                   ops);
-               print
                FixDec { fixity = fixity, ops = ops })
             end
         | Ast.FsigDec fsigbs =>
@@ -315,7 +312,7 @@ structure Elab : ELAB = struct
               val conversionInfo =
                 { sourceMap = #sourceMap conversionInfo
                 , comments = #comments conversionInfo
-                , fixity = ref (! (#fixity conversionInfo)) }
+                , fixity = ref (!(#fixity conversionInfo)) }
             in
               SeqDec (List.map (convertDec conversionInfo) decs)
             end
@@ -387,9 +384,9 @@ structure Elab : ELAB = struct
   and convertDb
       conversionInfo
       (Ast.Db { lazyp : bool
-    , rhs : (symbol * Ast.ty option) list
-    , tyc : symbol
-    , tyvars : Ast.tyvar list })
+      , rhs : (symbol * Ast.ty option) list
+      , tyc : symbol
+      , tyvars : Ast.tyvar list })
       =
       Db
         { lazyp = lazyp
