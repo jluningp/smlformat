@@ -275,11 +275,19 @@ structure Format : FORMAT = struct
         | FlatAppPat [ pat ] => formatPat formatInfo appNeedsParens (#item pat)
         | FlatAppPat pats =>
             let
+              val pats =
+                List.map
+                  (fn pat => formatPat { indent = indent + indentSize } true (#item pat))
+                  pats
+
+              val oneLine = String.concat (intercalate " " pats)
+
               val app =
-                String.concat
-                  (intercalate
-                     " "
-                     (List.map (fn pat => formatPat formatInfo true (#item pat)) pats))
+                if shouldNewline oneLine
+                then
+                  String.concat
+                    (intercalate ("\n" ^ (createIndent (indent + indentSize))) pats)
+                else oneLine
             in
               if appNeedsParens then "(" ^ app ^ ")" else app
             end
@@ -441,9 +449,10 @@ structure Format : FORMAT = struct
             ^ "\n"
             ^ (createIndent (indent + indentSize))
             ^ formatFsigconst { indent = indent + indentSize } sigConst
-        | BaseFct { body : strexp
-          , constraint : sigexp sigConst
-          , params : (symbol option * sigexp) list } =>
+        | BaseFct
+            { body : strexp
+            , constraint : sigexp sigConst
+            , params : (symbol option * sigexp) list } =>
             String.concat
               (intercalate
                  " "
@@ -744,12 +753,12 @@ structure Format : FORMAT = struct
 
             end
         | LocalDec (d1, d2) =>
-            "local " ^ "\n " ^ (createIndent (indent + indentSize))
+            "local " ^ "\n" ^ (createIndent (indent + indentSize))
             ^ formatDec { indent = indent + indentSize } d1
             ^ "\n"
             ^ (createIndent indent)
             ^ "in"
-            ^ "\n "
+            ^ "\n"
             ^ (createIndent (indent + indentSize))
             ^ formatDec { indent = indent + indentSize } d2
             ^ "\n"
@@ -834,11 +843,12 @@ structure Format : FORMAT = struct
             ^ (createIndent indent)
             ^ formatRvb formatInfo rvb
         | MarkRvb (rvb, region) => formatRvb formatInfo rvb
-        | Rvb { exp : exp
-          , fixity : (symbol * region) option
-          , lazyp : bool
-          , resultty : ty option
-          , var : symbol } =>
+        | Rvb
+            { exp : exp
+            , fixity : (symbol * region) option
+            , lazyp : bool
+            , resultty : ty option
+            , var : symbol } =>
             let
               val ty =
                 case resultty of
@@ -937,7 +947,8 @@ structure Format : FORMAT = struct
 
   and formatDb
       (formatInfo as { indent })
-      (Db { lazyp : bool, rhs : (symbol * ty option) list, tyc : symbol, tyvars : tyvar list })
+      (Db
+        { lazyp : bool, rhs : (symbol * ty option) list, tyc : symbol, tyvars : tyvar list })
       =
       let
         fun formatVariant (sym, NONE) = Symbol.name sym

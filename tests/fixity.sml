@@ -50,3 +50,13 @@ fun f x y =
       and_
       equal
     before station to  / which the laws of_ nature
+
+local
+  infix i
+in
+  fun x i y = x + y
+  val _ = 10 i 11
+  val _ =  i 10 11
+end
+
+val _ = i 10 11
