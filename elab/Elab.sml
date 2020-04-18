@@ -1,7 +1,10 @@
 structure Elab : ELAB = struct
   open ElabAst
 
-  type conversionInfo = {sourceMap : SourceMap.sourcemap, comments : (int * string list) list ref}
+  type conversionInfo =
+    { sourceMap : SourceMap.sourcemap
+    , comments : (int * string list) list ref
+    , fixity : Fixity.fixity StringMap.map ref }
 
   (* Comments should be sorted in descending order by line *)
   fun getLine sourceMap (left, right) =
@@ -24,8 +27,8 @@ structure Elab : ELAB = struct
     | intercalate sep (x :: xs) = x :: sep :: intercalate sep xs
 
   fun addComment (conversionInfo : conversionInfo) value convert comment mark region
-    =
-    let
+      =
+      let
         val line = getLine (#sourceMap conversionInfo) region
         val comments = #comments conversionInfo
 
@@ -66,7 +69,10 @@ structure Elab : ELAB = struct
               { constraint = convertTy conversionInfo constraint
               , expr = convertExp conversionInfo expr }
         | Ast.FlatAppExp exps =>
-            FixAppExp (FixityParser.map (fn exp => convertExp conversionInfo (#item exp)) (FixityParser.parse exps))
+            FixAppExp
+              (FixityParser.map
+                 (fn exp => convertExp conversionInfo (#item exp))
+                 (FixityParser.parse (! (#fixity conversionInfo)) exps))
         | Ast.FnExp rules => FnExp (List.map (convertRule conversionInfo) rules)
         | Ast.HandleExp { expr : Ast.exp, rules : Ast.rule list } =>
             HandleExp
@@ -279,7 +285,18 @@ structure Elab : ELAB = struct
             ExceptionDec (List.map (convertEb conversionInfo) ebs)
         | Ast.FctDec fctbs => FctDec (List.map (convertFctb conversionInfo) fctbs)
         | Ast.FixDec { fixity : fixity, ops : symbol list } =>
-            FixDec { fixity = fixity, ops = ops }
+            let
+              val fixitymap = #fixity conversionInfo
+            in
+              ((List.app
+                  (fn sym =>
+                      Ref.modify
+                        (fn map => StringMap.insert (map, Symbol.name sym, fixity))
+                        fixitymap)
+                  ops);
+               print
+               FixDec { fixity = fixity, ops = ops })
+            end
         | Ast.FsigDec fsigbs =>
             FsigDec (List.map (convertFsigb conversionInfo) fsigbs)
         | Ast.FunDec (fbs, tyvars) =>
@@ -292,7 +309,16 @@ structure Elab : ELAB = struct
         | Ast.OvldDec (symbol, ty, exps) =>
             OvldDec
               (symbol, convertTy conversionInfo ty, List.map (convertExp conversionInfo) exps)
-        | Ast.SeqDec decs => SeqDec (List.map (convertDec conversionInfo) decs)
+        | Ast.SeqDec decs =>
+            let
+              (* We make a new ref here so that fixity declarations don't escape their scope. *)
+              val conversionInfo =
+                { sourceMap = #sourceMap conversionInfo
+                , comments = #comments conversionInfo
+                , fixity = ref (! (#fixity conversionInfo)) }
+            in
+              SeqDec (List.map (convertDec conversionInfo) decs)
+            end
         | Ast.SigDec sigbs => SigDec (List.map (convertSigb conversionInfo) sigbs)
         | Ast.StrDec strbs => StrDec (List.map (convertStrb conversionInfo) strbs)
         | Ast.TypeDec tbs => TypeDec (List.map (convertTb conversionInfo) tbs)
@@ -339,10 +365,10 @@ structure Elab : ELAB = struct
       addComment conversionInfo fb convertFb CommentFb MarkFb region
 
   and convertClause
-    conversionInfo
-    (Ast.Clause { exp : Ast.exp, pats : Ast.pat Ast.fixitem list, resultty : Ast.ty option })
-    =
-    Clause
+      conversionInfo
+      (Ast.Clause { exp : Ast.exp, pats : Ast.pat Ast.fixitem list, resultty : Ast.ty option })
+      =
+      Clause
         { exp = convertExp conversionInfo exp
         , pats = List.map (mapFixitem (convertPat conversionInfo)) pats
         , resultty = Option.map (convertTy conversionInfo) resultty }
@@ -350,22 +376,22 @@ structure Elab : ELAB = struct
   and convertTb conversionInfo (Ast.MarkTb (tb, region)) =
       addComment conversionInfo tb convertTb CommentTb MarkTb region
     | convertTb
-    conversionInfo
-    (Ast.Tb { def : Ast.ty, tyc : symbol, tyvars : Ast.tyvar list })
-    =
-    Tb
+      conversionInfo
+      (Ast.Tb { def : Ast.ty, tyc : symbol, tyvars : Ast.tyvar list })
+      =
+      Tb
         { def = convertTy conversionInfo def
         , tyc = tyc
         , tyvars = List.map (convertTyvar conversionInfo) tyvars }
 
   and convertDb
-    conversionInfo
-    (Ast.Db { lazyp : bool
+      conversionInfo
+      (Ast.Db { lazyp : bool
     , rhs : (symbol * Ast.ty option) list
     , tyc : symbol
     , tyvars : Ast.tyvar list })
-    =
-    Db
+      =
+      Db
         { lazyp = lazyp
         , rhs = List.map
           (fn (sym, ty) => (sym, Option.map (convertTy conversionInfo) ty))
@@ -386,10 +412,10 @@ structure Elab : ELAB = struct
   and convertStrb conversionInfo (Ast.MarkStrb (strb, region)) =
       addComment conversionInfo strb convertStrb CommentStrb MarkStrb region
     | convertStrb
-    conversionInfo
-    (Ast.Strb { constraint : Ast.sigexp Ast.sigConst, def : Ast.strexp, name : symbol })
-    =
-    Strb
+      conversionInfo
+      (Ast.Strb { constraint : Ast.sigexp Ast.sigConst, def : Ast.strexp, name : symbol })
+      =
+      Strb
         { constraint = mapSigconst (convertSigexp conversionInfo) constraint
         , def = convertStrexp conversionInfo def
         , name = name }
@@ -405,8 +431,8 @@ structure Elab : ELAB = struct
       Sigb { def = convertSigexp conversionInfo def, name = name }
 
   and convertFsigb conversionInfo (Ast.Fsigb { def : Ast.fsigexp, name : symbol })
-    =
-    Fsigb { def = convertFsigexp conversionInfo def, name = name }
+      =
+      Fsigb { def = convertFsigexp conversionInfo def, name = name }
     | convertFsigb conversionInfo (Ast.MarkFsigb (fsigb, region)) =
       addComment conversionInfo fsigb convertFsigb CommentFsigb MarkFsigb region
 

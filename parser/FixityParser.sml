@@ -8,53 +8,22 @@ structure FixityParser : FIXITY_PARSER = struct
   fun map f (InfixApp (l, x, r)) = InfixApp (map f l, f x, map f r)
     | map f (FlatApp exps) = FlatApp (List.map f exps)
 
-  fun isInfix7 { fixity, item, region } =
-      case fixity of
-          NONE => false
-        | SOME symbol =>
-            case Symbol.name symbol of
-                ("*" | "/" | "div" | "mod") => true
-              | _ => false
+  fun isFixity fixDecs fixity sym =
+      case (StringMap.find (fixDecs, sym), fixity) of
+          (SOME (Fixity.INfix (n1, m1)), Fixity.INfix (n2, m2)) =>
+            n1 = n2 andalso m1 = m2
+        | (SOME Fixity.NONfix, Fixity.NONfix) => true
+        | _ => false
 
-  fun isInfix6 { fixity, item, region } =
+  fun isInfixR fixDecs n { fixity, item, region } =
       case fixity of
           NONE => false
-        | SOME symbol =>
-            case Symbol.name symbol of
-                ("+" | "-" | "^") => true
-              | _ => false
+        | SOME sym => isFixity fixDecs (Fixity.infixright n) (Symbol.name sym)
 
-  fun isInfixr5 { fixity, item, region } =
+  fun isInfix fixDecs n { fixity, item, region } =
       case fixity of
           NONE => false
-        | SOME symbol =>
-            case Symbol.name symbol of
-                ("::" | "@") => true
-              | _ => false
-
-  fun isInfix4 { fixity, item, region } =
-      case fixity of
-          NONE => false
-        | SOME symbol =>
-            case Symbol.name symbol of
-                ("=" | "<>" | ">" | ">=" | "<" | "<=") => true
-              | _ => false
-
-  fun isInfix3 { fixity, item, region } =
-      case fixity of
-          NONE => false
-        | SOME symbol =>
-            case Symbol.name symbol of
-                (":=" | "o") => true
-              | _ => false
-
-  fun isInfix0 { fixity, item, region } =
-      case fixity of
-          NONE => false
-        | SOME symbol =>
-            case Symbol.name symbol of
-                "before" => true
-              | _ => false
+        | SOME sym => isFixity fixDecs (Fixity.infixleft n) (Symbol.name sym)
 
   fun parseFixityR f [] = FlatApp []
     | parseFixityR f (exp :: exps) =
@@ -74,17 +43,27 @@ structure FixityParser : FIXITY_PARSER = struct
    * others are treated as prefix *)
   (* TODO: Also consider fixity of operators whose fixity
    * is declared inside the file *)
-  fun parseFixExp fixity (InfixApp (eL, exp, eR)) =
-      InfixApp (parseFixExp fixity eL, exp, parseFixExp fixity eR)
-    | parseFixExp fixity (FlatApp exps) =
-      case fixity of
-          7 => reverse (parseFixityR isInfix7 (List.rev exps))
-        | 6 => parseFixExp 7 (reverse (parseFixityR isInfix6 (List.rev exps)))
-        | 5 => parseFixExp 6 (parseFixityR isInfixr5 exps)
-        | 4 => parseFixExp 5 (reverse (parseFixityR isInfix4 (List.rev exps)))
-        | 3 => parseFixExp 4 (reverse (parseFixityR isInfix3 (List.rev exps)))
-        | 0 => parseFixExp 3 (reverse (parseFixityR isInfix0 (List.rev exps)))
-        | _ => parseFixExp 0 (FlatApp exps)
+  fun parseFixExp (fixity, infixR, fixDecs) (InfixApp (eL, exp, eR)) =
+      if fixity > 9
+      then InfixApp (eL, exp, eR)
+      else
+        InfixApp
+          (parseFixExp (fixity, infixR, fixDecs) eL
+          , exp
+          , parseFixExp (fixity, infixR, fixDecs) eR)
+    | parseFixExp (fixity, infixR, fixDecs) (FlatApp exps) =
+      if fixity > 9
+      then FlatApp exps
+      else
+        if infixR
+        then
+          parseFixExp
+            (fixity + 1, false, fixDecs)
+            (parseFixityR (isInfixR fixDecs fixity) exps)
+        else
+          parseFixExp
+            (fixity, true, fixDecs)
+            (reverse (parseFixityR (isInfix fixDecs fixity) (List.rev exps)))
 
-  fun parse exps = parseFixExp 0 (FlatApp exps)
+  fun parse fixDecs exps = parseFixExp (0, false, fixDecs) (FlatApp exps)
 end

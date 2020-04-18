@@ -20,7 +20,9 @@ structure SmlFormat : SML_FORMAT = struct
 
         val elabAst =
           Elab.elaborate
-            { comments = ref comments, sourceMap = (#sourceMap source) }
+            { comments = ref comments
+            , sourceMap = (#sourceMap source)
+            , fixity = ref Fixities.basis }
             ast
       in
         Format.formatDec { indent = 0 } elabAst

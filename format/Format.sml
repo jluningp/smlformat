@@ -1,9 +1,8 @@
-(* : FORMAT *)
-structure Format = struct
+structure Format : FORMAT = struct
   open ElabAst
   val indentSize = 2
   val characters = 75
-  type formatInfo = {indent : int}
+  type formatInfo = { indent : int }
   fun createIndent n = String.concat (List.tabulate (n, fn _ => " "))
 
   fun intercalate sep [] = []
@@ -615,11 +614,10 @@ structure Format = struct
                  ("\n" ^ createIndent indent ^ "and ")
                  (List.map
                     (fn (sym, tyvars, ty) =>
-                        formatTyvars formatInfo tyvars ^ Symbol.name sym
-                        ^ (case ty of
-                             NONE => ""
-                           | SOME ty => " = " ^ formatTy { indent = indent + indentSize } ty)
-                          )
+                        (case ty of
+                             NONE => formatTyvars formatInfo tyvars ^ Symbol.name sym ^ ""
+                           | SOME ty =>
+                               formatTb formatInfo (Tb { def = ty, tyc = sym, tyvars = tyvars })))
                     tys))
         | ValSpec syms =>
             "val "
@@ -714,7 +712,8 @@ structure Format = struct
             ^ String.concat
               (intercalate "\n\nand " (List.map (formatStrb formatInfo) strbs))
         | FixDec { fixity : fixity, ops : symbol list } =>
-            Fixity.fixityToString fixity ^ pathToString ops
+            Fixity.fixityToString fixity
+            ^ (String.concat (intercalate " " (List.map Symbol.name ops)))
         | FsigDec fsigbs =>
             (* TODO: Support functor signatures *)
             raise Fail "Functor signatures not supported"
@@ -861,17 +860,17 @@ structure Format = struct
       ^ formatFb formatInfo fb
 
   and formatClause
-    (formatInfo as { indent })
-    (Clause { exp : exp, pats : pat fixitem list, resultty : ty option })
-    =
-    let
+      (formatInfo as { indent })
+      (Clause { exp : exp, pats : pat fixitem list, resultty : ty option })
+      =
+      let
         val formattedExp = formatExp { indent = indent + indentSize } exp
 
         val formattedPats =
           List.map (fn pat => formatPat formatInfo true (#item pat)) pats
 
         val patNewlines = shouldNewline (String.concat formattedPats)
-        val newline = "\n" ^ createIndent indent
+        val newline = "\n" ^ createIndent (indent + indentSize)
 
         val formattedPats =
           let
@@ -911,12 +910,19 @@ structure Format = struct
             ^ ") "
 
   and formatTb formatInfo (MarkTb (tb, region)) = formatTb formatInfo tb
-    | formatTb formatInfo (Tb { def : ty, tyc : symbol, tyvars : tyvar list }) =
+    | formatTb
+      (formatInfo as { indent })
+      (Tb { def : ty, tyc : symbol, tyvars : tyvar list })
+      =
       let
         val tyvars = formatTyvars formatInfo tyvars
+        val typat = tyvars ^ Symbol.name tyc
+        val ty = formatTy { indent = indent + indentSize } def
+        val oneLine = typat ^ " = " ^ ty
       in
-        (* TODO: Add a newline if this gets too large *)
-        tyvars ^ Symbol.name tyc ^ " = " ^ formatTy formatInfo def
+        if shouldNewline oneLine
+        then typat ^ " =\n" ^ (createIndent (indent + indentSize)) ^ ty
+        else oneLine
       end
     | formatTb (formatInfo as { indent }) (CommentTb (comment, tb)) =
       (String.concat (intercalate ("\n" ^ (createIndent indent)) comment)) ^ "\n"
@@ -924,10 +930,10 @@ structure Format = struct
       ^ formatTb formatInfo tb
 
   and formatDb
-    (formatInfo as { indent })
-    (Db { lazyp : bool, rhs : (symbol * ty option) list, tyc : symbol, tyvars : tyvar list })
-    =
-    let
+      (formatInfo as { indent })
+      (Db { lazyp : bool, rhs : (symbol * ty option) list, tyc : symbol, tyvars : tyvar list })
+      =
+      let
         fun formatVariant (sym, NONE) = Symbol.name sym
           | formatVariant (sym, SOME ty) =
             Symbol.name sym ^ " of " ^ formatTy { indent = indent + indentSize } ty
@@ -968,10 +974,10 @@ structure Format = struct
   and formatStrb formatInfo (MarkStrb (strb, region)) =
       formatStrb formatInfo strb
     | formatStrb
-    (formatInfo as { indent })
-    (Strb { constraint : sigexp sigConst, def : strexp, name : symbol })
-    =
-    let
+      (formatInfo as { indent })
+      (Strb { constraint : sigexp sigConst, def : strexp, name : symbol })
+      =
+      let
         val constraint =
           case constraint of
               NoSig => ""
@@ -1014,11 +1020,11 @@ structure Format = struct
       ^ formatTyvar formatInfo tyvar
 
   and formatTy'
-    (formatInfo as { indent })
-    (parens : {con : bool, tuple : bool, arrow : bool})
-    ty
-    =
-    case ty of
+      (formatInfo as { indent })
+      (parens : { con : bool, tuple : bool, arrow : bool })
+      ty
+      =
+      case ty of
           ConTy (syms, []) => pathToString syms
         | ConTy (syms, [ arg ]) =>
             let
@@ -1072,16 +1078,21 @@ structure Format = struct
             end
         | MarkTy (ty, region) => formatTy' formatInfo parens ty
         | RecordTy tys =>
-            "{"
-            ^ String.concat
-              (intercalate
-                 ", "
-                 (List.map
-                    (fn (sym, ty) =>
-                        Symbol.name sym ^ " : "
-                        ^ formatTy' formatInfo { con = false, tuple = false, arrow = false } ty)
-                    tys))
-            ^ "}"
+            let
+              val fields =
+                List.map
+                  (fn (sym, ty) =>
+                      Symbol.name sym ^ " : "
+                      ^ formatTy' formatInfo { con = false, tuple = false, arrow = false } ty)
+                  tys
+
+              val sep =
+                if shouldNewline (String.concat fields)
+                then "\n" ^ (createIndent indent) ^ ", "
+                else ", "
+            in
+              "{ " ^ String.concat (intercalate sep fields) ^ " }"
+            end
         | TupleTy tys =>
             let
               val tuplety =

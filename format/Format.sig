@@ -1,4 +1,4 @@
 signature FORMAT = sig
   type formatInfo = {indent : int}
-  val formatDec : (formatInfo -> (CommentedAst.dec -> string))
+  val formatDec : formatInfo -> ElabAst.dec -> string
 end

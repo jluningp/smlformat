@@ -4,6 +4,8 @@ group
         structure Elab
         structure Format
         structure SmlFormat
+        structure Fixity
+        structure StringMap
 is
       $/basis.cm
       $/smlnj-lib.cm
@@ -11,6 +13,8 @@ is
       $smlnj/viscomp/basics.cm
 
       lib/lib.sml
+      lib/Fixities.sml
+      lib/Fixities.sig
 #if SMLNJ_MINOR_VERSION >= 83
       lib/ExtractLiteral.sml
 #else
