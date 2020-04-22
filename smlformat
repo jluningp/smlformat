@@ -1,6 +1,5 @@
 #!/bin/bash
 BASE_DIR=$(dirname "$0")
-echo $0
 
 while getopts 'i:o:h' flag
 do
